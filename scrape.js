@@ -51,49 +51,34 @@ async function scrapeProductPage(page, url, checkType) {
       endDate = dateMatch[2];
     }
 
-    // 2. コストコ専用の価格抽出（DOM要素から直接正確に取得を試みる）
-    const prices = await page.evaluate(() => {
-      // ページ内の主要な価格表示要素をセレクタで探索
-      const priceElements = document.querySelectorAll('.price, .product-price, [data-qa="product-price"], .price-box span');
-      const found = [];
-      priceElements.forEach(el => {
-        const text = el.innerText.replace(/[¥￥,]/g, '').trim();
-        if (/^\d+$/.test(text)) {
-          found.push(parseInt(text, 10));
-        }
-      });
-      return found;
-    });
+    // 2. コストコオンラインの価格ブロック構造に基づいた正確な抽出
+    // 「オンライン価格 ¥4,098」のような部分をキャプチャ
+    const onlinePriceMatch = bodyText.match(/オンライン価格\s*[¥￥]\s*([0-9,]+)/);
+    
+    // 「価格 ¥3,278」や「オフ後価格 ¥3,278」のような最終価格部分をキャプチャ
+    // （※「値引き - ¥820」の数字を拾わないよう、ラベル直後の金額を正確に狙う）
+    const finalPriceMatch = bodyText.match(/(?:価格|オフ後価格|割引価格)\s*[¥￥]\s*([0-9,]+)/);
 
-    // テキスト正規表現によるフォールバック抽出
-    const onlinePriceMatch = bodyText.match(/オンライン価格\s*[¥￥]([0-9,]+)/);
-    const finalPriceMatch = bodyText.match(/(?:価格|オフ後価格|割引価格)\s*[¥￥]([0-9,]+)/);
-
-    if (dateMatch) {
-      // 特売時の処理：通常価格とセール価格を明確に分ける
+    if (dateMatch || onlinePriceMatch) {
       if (onlinePriceMatch) {
         normalPrice = onlinePriceMatch[1].replace(/,/g, '');
       }
-      
-      // 「オフ後価格」や「割引価格」の後ろにある金額を狙う
-      const discountBlockMatch = bodyText.match(/(?:オフ後価格|割引価格|セール価格)[^\d]*[¥￥]([0-9,]+)/);
-      if (discountBlockMatch) {
-        salePrice = discountBlockMatch[1].replace(/,/g, '');
-      } else if (prices.length >= 2) {
-        // 抽出できた価格候補のうち、大きい方を通常価格、小さい方をセール価格とする
-        const uniquePrices = [...new Set(prices)].sort((a, b) => b - a);
-        if (uniquePrices.length >= 2) {
-          normalPrice = String(uniquePrices[0]);
-          salePrice = String(uniquePrices[1]);
-        }
+
+      if (finalPriceMatch) {
+        salePrice = finalPriceMatch[1].replace(/,/g, '');
+      }
+
+      // もし両方取れていて、かつ値引きされていない（通常価格と同じ）場合は特売価格を空にする
+      if (normalPrice && salePrice && normalPrice === salePrice) {
+        salePrice = '';
+        startDate = '';
+        endDate = '';
       }
     } else {
-      // 通常時（特売なし）
-      const singleMatch = onlinePriceMatch || bodyText.match(/¥\s*([0-9,]+)/);
+      // 特売情報がない通常の価格表記
+      const singleMatch = bodyText.match(/価格\s*[¥￥]\s*([0-9,]+)/) || bodyText.match(/¥\s*([0-9,]+)/);
       if (singleMatch) {
         normalPrice = singleMatch[1].replace(/,/g, '');
-      } else if (prices.length > 0) {
-        normalPrice = String(prices[0]);
       }
       salePrice = '';
       startDate = '';
