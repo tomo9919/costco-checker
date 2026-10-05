@@ -1,0 +1,45 @@
+name: Costco Online Monitor
+
+on:
+  schedule:
+    # JST 6:15 (UTC 21:15 前日) - 全項目チェック
+    - cron: '15 21 * * *'
+    # JST 12:22 (UTC 3:22) - 在庫のみチェック
+    - cron: '22 3 * * *'
+    # JST 20:10 (UTC 11:10) - 在庫のみチェック
+    - cron: '10 11 * * *'
+  workflow_dispatch: # 手動実行ボタン用
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: コードのチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Node.jsのセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 依存パッケージのインストール
+        run: npm install
+
+      - name: Playwrightブラウザのインストール
+        run: npx playwright install --with-deps chromium
+
+      - name: 実行モードの判定
+        id: mode
+        run: |
+          HOUR=$(date -u +%H)
+          if [ "$HOUR" -eq "21" ]; then
+            echo "CHECK_TYPE=full" >> $GITHUB_ENV
+          else
+            echo "CHECK_TYPE=stock" >> $GITHUB_ENV
+          fi
+
+      - name: スクレイピング実行
+        env:
+          GAS_WEBAPP_URL: ${{ secrets.GAS_WEBAPP_URL }}
+          CHECK_TYPE: ${{ env.CHECK_TYPE }}
+        run: node scrape.js
