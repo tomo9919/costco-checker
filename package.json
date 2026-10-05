@@ -1,0 +1,13 @@
+{
+  "name": "costco-checker",
+  "version": "1.0.0",
+  "description": "Costco Online Price & Stock Monitor",
+  "main": "scrape.js",
+  "scripts": {
+    "start": "node scrape.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "playwright": "^1.40.0"
+  }
+}
