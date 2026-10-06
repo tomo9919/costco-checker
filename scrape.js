@@ -40,13 +40,13 @@ async function scrapeProductPage(browser, url) {
     try {
       title = await page.evaluate(() => {
         const el = document.querySelector('h1.product-name, .product-details .name, h1');
-        return el ? el.innerText.trim() : '名称未取得';
+        return el ? (el.innerText || '').trim() : '名称未取得';
       });
     } catch (e) {}
 
-    // 3. 価格・特売・期間・在庫の抽出（構文修正版）
+    // 3. 価格・特売・期間・在庫の抽出（安全な trim 処理版）
     const extractedData = await page.evaluate(() => {
-      const bodyText = document.body.innerText;
+      const bodyText = document.body.innerText || '';
 
       // 在庫確認
       const btn = document.querySelector('#add-to-cart-button, [data-qa="add-to-cart-button"], .add-to-cart');
@@ -67,7 +67,7 @@ async function scrapeProductPage(browser, url) {
       let salePrice = null;
       const youPayEl = document.querySelector('.you-pay-value');
       if (youPayEl) {
-        const priceText = youPayEl.innerText.replace(/[¥￥,]/g, '').trim();
+        const priceText = (youPayEl.innerText || '').replace(/[¥￥,]/g, '').trim();
         const p = parseInt(priceText, 10);
         if (!isNaN(p)) {
           salePrice = p;
@@ -78,14 +78,14 @@ async function scrapeProductPage(browser, url) {
       let regularPrice = null;
       
       const allElements = Array.from(document.querySelectorAll('*'));
-      const onlinePriceLabelEl = allElements.find(el => el.children.length === 0 && el.innerText.trim() === 'オンライン価格');
+      const onlinePriceLabelEl = allElements.find(el => el.children.length === 0 && (el.innerText || '').trim() === 'オンライン価格');
       
       if (onlinePriceLabelEl) {
         let container = onlinePriceLabelEl.parentElement;
         for (let i = 0; i < 3 && container; i++) {
           const priceEl = container.querySelector('.notranslate.ng-star-inserted');
           if (priceEl) {
-            const text = priceEl.innerText.trim();
+            const text = (priceEl.innerText || '').trim();
             if (text.includes('¥') || text.includes('￥')) {
               const num = parseInt(text.replace(/[¥￥,]/g, ''), 10);
               if (!isNaN(num)) {
@@ -102,13 +102,13 @@ async function scrapeProductPage(browser, url) {
       if (!regularPrice) {
         const priceElements = Array.from(document.querySelectorAll('.notranslate.ng-star-inserted, .product-price, [data-qa="product-price"]'))
           .filter(el => {
-            const text = el.innerText.trim();
+            const text = (el.innerText || '').trim();
             return text.includes('¥') || text.includes('￥');
           });
 
         const prices = [];
         priceElements.forEach(el => {
-          const text = el.innerText.trim();
+          const text = (el.innerText || '').trim();
           if (text.match(/^[¥￥]?[0-9,]+$/)) {
             const num = parseInt(text.replace(/[¥￥,]/g, ''), 10);
             if (!isNaN(num) && num > 100 && !prices.includes(num)) {
