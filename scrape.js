@@ -2,7 +2,6 @@ const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
-
 const GAS_WEBAPP_URL = process.env.GAS_WEBAPP_URL;
 const DATA_FILE = path.join(__dirname, 'data.json');
 const CONCURRENCY = 2;
@@ -45,7 +44,7 @@ async function scrapeProductPage(browser, url) {
       });
     } catch (e) {}
 
-    // 3. 価格・特売・期間・在庫の抽出（「オンライン価格」「値引き」「価格」構造に対応）
+    // 3. 価格・特売・期間・在庫の抽出（DOMクラス対応版）
     const extractedData = await page.evaluate(() => {
       const bodyText = document.body.innerText;
 
@@ -64,39 +63,68 @@ async function scrapeProductPage(browser, url) {
         endDate = dateMatch[2];
       }
 
-      // 「オンライン価格」の抽出（＝通常価格）
-      let regularPrice = null;
-      const onlineMatch = bodyText.match(/オンライン価格\s*[-–—〜~]?\s*[¥￥]?\s*([0-9,]+)/);
-      if (onlineMatch) {
-        regularPrice = parseInt(onlineMatch[1].replace(/,/g, ''), 10);
-      }
-
-      // 「値引き」の抽出
-      let discountAmount = 0;
-      const discountMatch = bodyText.match(/値引き\s*[-–—〜~]?\s*[¥￥]?\s*([0-9,]+)/);
-      if (discountMatch) {
-        discountAmount = parseInt(discountMatch[1].replace(/,/g, ''), 10);
-      }
-
-      // 「価格」の抽出（＝最終価格 / 特売価格）
-      let finalPrice = null;
-      const priceMatch = bodyText.match(/価格\s*[¥￥]?\s*([0-9,]+)/);
-      if (priceMatch) {
-        finalPrice = parseInt(priceMatch[1].replace(/,/g, ''), 10);
-      }
-
-      // 特売判定
+      // 特売価格（you-pay-value）の取得
       let salePrice = null;
+      const youPayEl = document.querySelector('.you-pay-value');
+      if (youPayEl) {
+        const priceText = youPayEl.innerText.replace(/[¥￥,]/g, '').trim();
+        const p = parseInt(priceText, 10);
+        if (!isNaN(p)) {
+          salePrice = p;
+        }
+      }
+
+      // 価格候補の収集（notranslate等の要素から数値を取得）
+      const priceElements = Array.from(document.querySelectorAll('.notranslate, .product-price, [data-qa="product-price"]'));
+      const prices = [];
+      priceElements.forEach(el => {
+        const text = el.innerText.trim();
+        if (text.match(/^[¥￥]?[0-9,]+$/)) {
+          const num = parseInt(text.replace(/[¥￥,]/g, ''), 10);
+          if (!isNaN(num) && num > 100 && !prices.includes(num)) {
+            prices.push(num);
+          }
+        }
+      });
+
+      let regularPrice = null;
       let isSale = false;
 
-      if (discountAmount > 0 || (regularPrice && finalPrice && regularPrice > finalPrice)) {
+      if (salePrice !== null) {
         isSale = true;
-        salePrice = finalPrice || (regularPrice - discountAmount);
-      } else {
-        // 通常時（オンライン価格が取れなかった場合は価格を採用）
-        if (!regularPrice && finalPrice) {
-          regularPrice = finalPrice;
+        const higherPrices = prices.filter(p => p > salePrice);
+        if (higherPrices.length > 0) {
+          regularPrice = Math.max(...higherPrices);
+        } else if (prices.length > 0) {
+          regularPrice = Math.max(...prices);
         }
+      } else {
+        if (prices.length > 0) {
+          regularPrice = Math.max(...prices);
+        }
+      }
+
+      // フォールバック（テキストマッチ）
+      if (!regularPrice) {
+        const onlineMatch = bodyText.match(/オンライン価格\s*[-–—〜~]?\s*[¥￥]?\s*([0-9,]+)/);
+        if (onlineMatch) {
+          regularPrice = parseInt(onlineMatch[1].replace(/,/g, ''), 10);
+        }
+      }
+      if (!salePrice && isSale) {
+        const priceMatch = bodyText.match(/価格\s*[¥￥]?\s*([0-9,]+)/);
+        if (priceMatch) {
+          salePrice = parseInt(priceMatch[1].replace(/,/g, ''), 10);
+        }
+      }
+
+      // 特売の最終整合性チェック
+      if (regularPrice && salePrice && regularPrice > salePrice) {
+        isSale = true;
+      } else if (salePrice && !regularPrice) {
+        regularPrice = salePrice;
+        salePrice = null;
+        isSale = false;
       }
 
       return {
@@ -189,7 +217,6 @@ function compareData(oldData, newData) {
   return diffs;
 }
 
-// 修正箇所1: items (スクレイピング結果一覧) を引数に追加し、POSTデータに含める
 async function sendToGAS(timestamp, diffs, items) {
   if (!GAS_WEBAPP_URL) {
     console.warn('⚠️ GAS_WEBAPP_URLが設定されていないため送信をスキップします。');
@@ -237,25 +264,4 @@ async function sendToGAS(timestamp, diffs, items) {
   for (let i = 0; i < urls.length; i += CONCURRENCY) {
     const chunk = urls.slice(i, i + CONCURRENCY);
     console.log(`[進捗] ${i + 1}〜${Math.min(i + CONCURRENCY, urls.length)} / ${urls.length} 件目を処理中...`);
-    const results = await Promise.all(chunk.map(url => scrapeProductPage(browser, url)));
-    newData.push(...results.filter(r => r !== null));
-  }
-
-  await browser.close();
-
-  let oldData = [];
-  if (fs.existsSync(DATA_FILE)) {
-    try {
-      oldData = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
-    } catch (e) {}
-  }
-
-  const timestamp = getJstTimestamp();
-  const diffs = compareData(oldData, newData);
-
-  // 修正箇所2: 第三引数に newData を渡して全件データを送信
-  await sendToGAS(timestamp, diffs, newData);
-
-  fs.writeFileSync(DATA_FILE, JSON.stringify(newData, null, 2), 'utf-8');
-  console.log('=== 全処理完了 ===');
-})();
+    const results = await
