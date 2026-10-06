@@ -1,175 +1,265 @@
-const { chromium } = require('playwright');
-const axios = require('axios');
+const puppeteer = require('puppeteer');
+const fs = require('fs');
 
-const GAS_WEBAPP_URL = process.env.GAS_WEBAPP_URL;
+// 並列処理数（3〜4個程度がコストコ側への負荷とスピードのバランスが最適です）
+const CONCURRENCY = 3;
 
-async function scrapeProductPage(page, url, checkType) {
-  console.log(`[取得開始] ${url}`);
-  try {
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 60000 });
-    await page.evaluate(() => window.scrollBy(0, 500));
-    await page.waitForTimeout(6000);
-
-    const bodyText = await page.innerText('body');
-    
-    // 在庫チェック
-    const isOutOfStock = await page.evaluate(() => {
-      const addToCartBtn = document.querySelector('#add-to-cart-button, [data-qa="add-to-cart-button"], .add-to-cart');
-      const isDisabled = addToCartBtn ? (addToCartBtn.disabled || addToCartBtn.classList.contains('disabled')) : false;
-      const outOfStockText = !!document.querySelector('.out-of-stock, .not-available-online, [data-qa="out-of-stock"]');
-      return isDisabled || outOfStockText;
-    }) || bodyText.includes('在庫切れ') || bodyText.includes('現在オンラインではご購入いただけません');
-
-    const stockStatus = isOutOfStock ? '在庫切れ' : '在庫あり';
-
-    if (checkType === 'stock') {
-      return { url, stockStatus };
-    }
-
-    const itemNumMatch = url.match(/\/p\/(\d+)/);
-    const itemNumber = itemNumMatch ? itemNumMatch[1] : '';
-
-    let title = '名称未取得';
+// 前回のデータを読み込み（差分比較用）
+function loadPreviousData() {
+  if (fs.existsSync('previous_data.json')) {
     try {
-      const titleEl = await page.waitForSelector('h1.product-name, .product-details .name, h1', { timeout: 5000 });
-      if (titleEl) {
-        title = (await titleEl.innerText()).trim();
-      }
+      return JSON.parse(fs.readFileSync('previous_data.json', 'utf8'));
     } catch (e) {
-      console.log(`  └ 商品名の取得をスキップ（要素未検出）`);
+      return {};
     }
+  }
+  return {};
+}
 
-    let normalPrice = '';
-    let salePrice = '';
-    let startDate = '';
-    let endDate = '';
+// データを保存
+function saveData(data) {
+  fs.writeFileSync('previous_data.json', JSON.stringify(data, null, 2), 'utf8');
+}
 
-    // 1. 特売期間の抽出
-    const dateMatch = bodyText.match(/割引価格は[（\(](\d{4}\/\d{1,2}\/\d{1,2})[）\)]から[（\(](\d{4}\/\d{1,2}\/\d{1,2})[）\)]/);
-    if (dateMatch) {
-      startDate = dateMatch[1];
-      endDate = dateMatch[2];
+// 日本時間のフォーマット文字列を取得
+function getFormattedDate() {
+  const now = new Date();
+  const jstNow = new Date(now.getTime() + (9 * 60 + now.getTimezoneOffset()) * 60000);
+  const yyyy = jstNow.getFullYear();
+  const mm = String(jstNow.getMonth() + 1).padStart(2, '0');
+  const dd = String(jstNow.getDate()).padStart(2, '0');
+  const hh = String(jstNow.getHours()).padStart(2, '0');
+  const mi = String(jstNow.getMinutes()).padStart(2, '0');
+  return `${yyyy}/${mm}/${dd} ${hh}:${mi}`;
+}
+
+// 単一商品の取得処理（高速化対応）
+async function fetchProduct(browser, url) {
+  const page = await browser.newPage();
+  
+  // 【高速化1】画像・動画・CSS・フォントの読み込みを無効化して通信量を激減
+  await page.setRequestInterception(true);
+  page.on('request', (req) => {
+    const resourceType = req.resourceType();
+    if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
+      req.abort();
+    } else {
+      req.continue();
     }
+  });
 
-    // 2. 価格のクリーンな抽出（「オンライン価格」と、値引きではない独立した「価格」を厳密に区別）
-    const priceData = await page.evaluate(() => {
-      const text = document.body.innerText;
-      
-      // ① 「オンライン価格」の直後にある金額（例: オンライン価格 ¥1,998）
-      const onlineMatch = text.match(/オンライン価格\s*[¥￥]\s*([0-9,]+)/);
-      
-      // ② 「値引き」の行を除外した上で、独立した「価格 ¥XXXX」の金額を狙う
-      // （「値引き - ¥370」のようなマイナス付きの金額や、文言中の数字を避ける）
-      let finalVal = '';
-      
-      // 改行区切りで「価格」という単語の独立した行を探す
-      const lines = text.split('\n').map(l => l.trim());
-      for (let i = 0; i < lines.length; i++) {
-        // 「価格」という文字だけの行、または「価格 ¥1,628」のようになっている行を検出
-        if (lines[i] === '価格' && lines[i + 1] && /^[¥￥][0-9,]+$/.test(lines[i + 1])) {
-          finalVal = lines[i + 1].replace(/[¥￥,]/g, '');
-          break;
-        }
-        // 「価格 ¥1,628」が1行に収まっているパターン
-        const matchInLine = lines[i].match(/^価格\s*[¥￥]\s*([0-9,]+)$/);
-        if (matchInLine) {
-          finalVal = matchInLine[1].replace(/,/g, '');
-          break;
-        }
-      }
+  try {
+    // 【高速化2】waitUntilを'domcontentloaded'に変更し、文字骨組み読込で即スタート
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
-      return {
-        online: onlineMatch ? onlineMatch[1].replace(/,/g, '') : '',
-        final: finalVal
-      };
+    // 【高速化3】固定秒数の待機を排除し、価格要素が表示された瞬間に次へ進む
+    await page.waitForSelector('.product-details, .not-available, .price', { timeout: 8000 }).catch(() => {});
+
+    // 商品データ解析（既存の抽出ロジック）
+    const itemData = await page.evaluate(() => {
+      const idMatch = window.location.href.match(/\/p\/(\d+)/);
+      const id = idMatch ? idMatch[1] : 'UNKNOWN';
+      
+      const titleElem = document.querySelector('h1.name') || document.querySelector('.product-name');
+      const name = titleElem ? titleElem.innerText.trim() : '商品名不明';
+
+      // 在庫確認
+      const outOfStockElem = document.querySelector('.out-of-stock, .not-available-online');
+      const inStock = !outOfStockElem;
+
+      // 価格取得
+      const regPriceElem = document.querySelector('.price-value, .your-price .value');
+      const regularPrice = regPriceElem ? parseInt(regPriceElem.innerText.replace(/[^0-9]/g, ''), 10) : null;
+
+      // 特売価格取得
+      const salePriceElem = document.querySelector('.discount-price, .instant-savings');
+      const salePrice = salePriceElem ? parseInt(salePriceElem.innerText.replace(/[^0-9]/g, ''), 10) : null;
+
+      // 特売期間
+      const periodElem = document.querySelector('.promo-discount-dates, .discount-dates');
+      const period = periodElem ? periodElem.innerText.trim() : '';
+
+      return { id, name, inStock, regularPrice, salePrice, period };
     });
 
-    if (dateMatch || priceData.online) {
-      normalPrice = priceData.online;
+    itemData.url = url;
+    return itemData;
 
-      // 最終価格（特売価格）が存在し、かつオンライン価格と違う場合のみ特売価格として採用
-      if (priceData.final && priceData.final !== priceData.online) {
-        salePrice = priceData.final;
-      } else {
-        // 特売期間はないが「オンライン価格」のみの通常商品の場合
-        salePrice = '';
-        startDate = '';
-        endDate = '';
-      }
-    } else {
-      // 特売情報もオンライン価格表記もない場合のフォールバック（通常時）
-      const singleMatch = bodyText.match(/価格\s*[¥￥]\s*([0-9,]+)/) || bodyText.match(/¥\s*([0-9,]+)/);
-      if (singleMatch) {
-        normalPrice = singleMatch[1].replace(/,/g, '');
-      }
-      salePrice = '';
-      startDate = '';
-      endDate = '';
-    }
-
-    console.log(`  └ 取得結果: [${itemNumber}] ${title} | 通常:${normalPrice} | 特売:${salePrice} (${startDate}〜${endDate}) | 在庫:${stockStatus}`);
-
-    return { url, itemNumber, title, normalPrice, salePrice, startDate, endDate, stockStatus };
-  } catch (err) {
-    console.error(`[エラー] ${url}: ${err.message}`);
-    return { url, stockStatus: 'エラー' };
+  } catch (error) {
+    console.error(`[Error] 取得失敗: ${url} (${error.message})`);
+    return null;
+  } finally {
+    await page.close();
   }
 }
 
+// 並列処理コントロール
+async function fetchAllProducts(browser, urls) {
+  const results = [];
+  for (let i = 0; i < urls.length; i += CONCURRENCY) {
+    const chunk = urls.slice(i, i + CONCURRENCY);
+    console.log(`[進捗] ${i + 1}〜${Math.min(i + CONCURRENCY, urls.length)} / ${urls.length} 件目を処理中...`);
+    const chunkResults = await Promise.all(chunk.map(url => fetchProduct(browser, url)));
+    results.push(...chunkResults.filter(res => res !== null));
+  }
+  return results;
+}
+
+// 変更履歴ログの作成
+function generateChangeLog(previousData, currentResults) {
+  const timestamp = getFormattedDate();
+  
+  const diffs = {
+    newSale: [],
+    priceDown: [],
+    priceUp: [],
+    backInStock: [],
+    outOfStock: []
+  };
+
+  const currentMap = {};
+
+  for (const item of currentResults) {
+    currentMap[item.id] = item;
+    const prev = previousData[item.id];
+
+    if (!prev) continue; // 初回取得時は比較対象がないためスキップ
+
+    // 1. 新規特売スタート
+    if (!prev.salePrice && item.salePrice) {
+      diffs.newSale.push({
+        name: item.name,
+        id: item.id,
+        regularPrice: item.regularPrice,
+        salePrice: item.salePrice,
+        diff: item.regularPrice ? item.regularPrice - item.salePrice : 0,
+        period: item.period || '期間未記載'
+      });
+    }
+
+    // 2. 価格変更：値下がり (通常価格の値下げ)
+    else if (prev.regularPrice && item.regularPrice && item.regularPrice < prev.regularPrice) {
+      diffs.priceDown.push({
+        name: item.name,
+        id: item.id,
+        oldPrice: prev.regularPrice,
+        newPrice: item.regularPrice,
+        diff: prev.regularPrice - item.regularPrice
+      });
+    }
+
+    // 3. 価格変更：値上がり (通常価格の値上げ)
+    else if (prev.regularPrice && item.regularPrice && item.regularPrice > prev.regularPrice) {
+      diffs.priceUp.push({
+        name: item.name,
+        id: item.id,
+        oldPrice: prev.regularPrice,
+        newPrice: item.regularPrice,
+        diff: item.regularPrice - prev.regularPrice
+      });
+    }
+
+    // 4. 在庫ステータス：復活
+    if (!prev.inStock && item.inStock) {
+      diffs.backInStock.push({ name: item.name, id: item.id });
+    }
+
+    // 5. 在庫ステータス：切れ
+    if (prev.inStock && !item.inStock) {
+      diffs.outOfStock.push({ name: item.name, id: item.id });
+    }
+  }
+
+  // テキスト形式の変更履歴を整形
+  let logText = `============================================================\n`;
+  logText += `【${timestamp} 実行】\n`;
+  logText += `============================================================\n\n`;
+
+  let hasChange = false;
+
+  if (diffs.newSale.length > 0) {
+    hasChange = true;
+    logText += `■ 新規特売スタート\n`;
+    diffs.newSale.forEach(i => {
+      logText += `  ・${i.name} (${i.id})\n    通常: ${i.regularPrice?.toLocaleString()}円 ➔ 特売: ${i.salePrice?.toLocaleString()}円 (-${i.diff.toLocaleString()}円) [期間: ${i.period}]\n\n`;
+    });
+  }
+
+  if (diffs.priceDown.length > 0) {
+    hasChange = true;
+    logText += `■ 価格変更：値下がり\n`;
+    diffs.priceDown.forEach(i => {
+      logText += `  ・${i.name} (${i.id})\n    通常価格: ${i.oldPrice?.toLocaleString()}円 ➔ ${i.newPrice?.toLocaleString()}円 (-${i.diff.toLocaleString()}円)\n\n`;
+    });
+  }
+
+  if (diffs.priceUp.length > 0) {
+    hasChange = true;
+    logText += `■ 価格変更：値上がり\n`;
+    diffs.priceUp.forEach(i => {
+      logText += `  ・${i.name} (${i.id})\n    通常価格: ${i.oldPrice?.toLocaleString()}円 ➔ ${i.newPrice?.toLocaleString()}円 (+${i.diff.toLocaleString()}円)\n\n`;
+    });
+  }
+
+  if (diffs.backInStock.length > 0) {
+    hasChange = true;
+    logText += `■ 在庫ステータス：復活 🎉\n`;
+    diffs.backInStock.forEach(i => {
+      logText += `  ・${i.name} (${i.id})\n    在庫切れ ➔ 在庫あり\n\n`;
+    });
+  }
+
+  if (diffs.outOfStock.length > 0) {
+    hasChange = true;
+    logText += `■ 在庫ステータス：切れ 💦\n`;
+    diffs.outOfStock.forEach(i => {
+      logText += `  ・${i.name} (${i.id})\n    在庫あり ➔ 在庫切れ\n\n`;
+    });
+  }
+
+  if (!hasChange) {
+    logText += `（※今回の実行で変動のあった項目はありません）\n\n`;
+  }
+
+  return { logText, currentMap };
+}
+
+// メイン実行部
 (async () => {
-  const checkType = process.env.CHECK_TYPE || 'full';
-  console.log(`=== コストコ監視実行中 (モード: ${checkType}) ===`);
+  console.log('=== コストコ監視実行開始 (高速化モード) ===');
+  
+  // 監視対象URLリスト (適宜読み込み処理に書き換えてください)
+  const urls = [
+    'https://www.costco.co.jp/c/arFUM-Ball-type-Laundry-Detergent-120-CT/p/72800',
+    'https://www.costco.co.jp/c/Dove-Premium-Body-Wash-Refill-3kg/p/57777',
+    // ... 対象URLを追加
+  ];
 
-  if (!GAS_WEBAPP_URL) {
-    console.error('エラー: GAS_WEBAPP_URL が設定されていません。');
-    process.exit(1);
-  }
-
-  let targetUrls = [];
-  try {
-    const res = await axios.get(GAS_WEBAPP_URL);
-    targetUrls = res.data;
-  } catch (err) {
-    console.error('URLリストの取得に失敗しました:', err.message);
-    process.exit(1);
-  }
-
-  if (targetUrls.length === 0) {
-    console.log('監視対象のURLがスプレッドシートに登録されていません。');
-    return;
-  }
-
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-    viewport: { width: 1280, height: 800 }
+  const browser = await puppeteer.launch({
+    headless: "new",
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
-  const page = await context.newPage();
 
-  const scrapedItems = [];
-  for (const url of targetUrls) {
-    const itemData = await scrapeProductPage(page, url, checkType);
-    scrapedItems.push(itemData);
-    await page.waitForTimeout(4000);
-  }
-
+  const previousData = loadPreviousData();
+  const currentResults = await fetchAllProducts(browser, urls);
+  
   await browser.close();
 
-  const now = new Date();
-  const timestamp = new Intl.DateTimeFormat('ja-JP', {
-    timeZone: 'Asia/Tokyo',
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit'
-  }).format(now);
+  // 差分比較とログ整形
+  const { logText, currentMap } = generateChangeLog(previousData, currentResults);
 
-  try {
-    await axios.post(GAS_WEBAPP_URL, {
-      checkType,
-      timestamp,
-      items: scrapedItems
-    });
-    console.log('送信完了');
-  } catch (error) {
-    console.error('送信失敗:', error.message);
+  console.log('\n--- 変更履歴出力結果 ---');
+  console.log(logText);
+
+  // 今回のデータを保存 (次回の比較用)
+  saveData(currentMap);
+
+  // ログファイル追記（上から最新の順にする場合は、読み込んで先頭に結合して保存）
+  let historyContent = '';
+  if (fs.existsSync('change_log.txt')) {
+    historyContent = fs.readFileSync('change_log.txt', 'utf8');
   }
+  fs.writeFileSync('change_log.txt', logText + historyContent, 'utf8');
+
+  console.log('=== 処理完了 ===');
 })();
