@@ -19,8 +19,10 @@ jobs:
         with:
           node-version: '20'
 
-      - name: 依存ライブラリのインストール
-        run: npm install
+      - name: 依存ライブラリとブラウザのインストール
+        run: |
+          npm install puppeteer axios
+          npx puppeteer browsers install
 
       - name: スクレイピングとGAS連携の実行
         env:
