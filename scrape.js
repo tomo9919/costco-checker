@@ -264,4 +264,24 @@ async function sendToGAS(timestamp, diffs, items) {
   for (let i = 0; i < urls.length; i += CONCURRENCY) {
     const chunk = urls.slice(i, i + CONCURRENCY);
     console.log(`[進捗] ${i + 1}〜${Math.min(i + CONCURRENCY, urls.length)} / ${urls.length} 件目を処理中...`);
-    const results = await
+    const results = await Promise.all(chunk.map(url => scrapeProductPage(browser, url)));
+    newData.push(...results.filter(r => r !== null));
+  }
+
+  await browser.close();
+
+  let oldData = [];
+  if (fs.existsSync(DATA_FILE)) {
+    try {
+      oldData = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+    } catch (e) {}
+  }
+
+  const timestamp = getJstTimestamp();
+  const diffs = compareData(oldData, newData);
+
+  await sendToGAS(timestamp, diffs, newData);
+
+  fs.writeFileSync(DATA_FILE, JSON.stringify(newData, null, 2), 'utf-8');
+  console.log('=== 全処理完了 ===');
+})();
