@@ -189,14 +189,15 @@ function compareData(oldData, newData) {
   return diffs;
 }
 
-async function sendToGAS(timestamp, diffs) {
+// 修正箇所1: items (スクレイピング結果一覧) を引数に追加し、POSTデータに含める
+async function sendToGAS(timestamp, diffs, items) {
   if (!GAS_WEBAPP_URL) {
     console.warn('⚠️ GAS_WEBAPP_URLが設定されていないため送信をスキップします。');
     return;
   }
   try {
-    console.log('🚀 GASへ変更履歴を送信中...');
-    await axios.post(GAS_WEBAPP_URL, { timestamp, diffs });
+    console.log('🚀 GASへデータを送信中...');
+    await axios.post(GAS_WEBAPP_URL, { timestamp, diffs, items });
     console.log('✅ GASへの送信が完了しました！');
   } catch (error) {
     console.error('❌ GAS送信エラー:', error.message);
@@ -252,7 +253,8 @@ async function sendToGAS(timestamp, diffs) {
   const timestamp = getJstTimestamp();
   const diffs = compareData(oldData, newData);
 
-  await sendToGAS(timestamp, diffs);
+  // 修正箇所2: 第三引数に newData を渡して全件データを送信
+  await sendToGAS(timestamp, diffs, newData);
 
   fs.writeFileSync(DATA_FILE, JSON.stringify(newData, null, 2), 'utf-8');
   console.log('=== 全処理完了 ===');
