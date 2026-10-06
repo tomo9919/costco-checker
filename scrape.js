@@ -44,7 +44,7 @@ async function scrapeProductPage(browser, url) {
       });
     } catch (e) {}
 
-    // 3. 価格・特売・期間・在庫の抽出（DOMクラス対応版）
+    // 3. 価格・特売・期間・在庫の抽出（クラス絞り込み版）
     const extractedData = await page.evaluate(() => {
       const bodyText = document.body.innerText;
 
@@ -74,8 +74,8 @@ async function scrapeProductPage(browser, url) {
         }
       }
 
-      // 価格候補の収集（notranslate等の要素から数値を取得）
-      const priceElements = Array.from(document.querySelectorAll('.notranslate, .product-price, [data-qa="product-price"]'));
+      // 価格候補の収集（商品コードの notranslate を除外し、notranslate.ng-star-inserted 等を対象にする）
+      const priceElements = Array.from(document.querySelectorAll('.notranslate.ng-star-inserted, .product-price, [data-qa="product-price"]'));
       const prices = [];
       priceElements.forEach(el => {
         const text = el.innerText.trim();
