@@ -2,50 +2,35 @@ name: Costco Online Monitor
 
 on:
   schedule:
-    # JST 6:15 (UTC 21:15 前日) - 全項目チェック
-    - cron: '15 21 * * *'
-    # JST 12:22 (UTC 3:22) - 在庫のみチェック
-    - cron: '22 3 * * *'
-    # JST 20:10 (UTC 11:10) - 在庫のみチェック
-    - cron: '10 11 * * *'
-  workflow_dispatch: # 手動実行ボタン用
+    # 毎日 日本時間 07:00 (UTC 22:00) に自動実行
+    - cron: '0 22 * * *'
+  workflow_dispatch: # 手動実行ボタンを有効化
 
 jobs:
-  scrape:
+  scrape-and-notify:
     runs-on: ubuntu-latest
+
     steps:
-      - name: コードのチェックアウト
+      - name: リポジトリのチェックアウト
         uses: actions/checkout@v4
 
-      - name: Node.jsのセットアップ
+      - name: Node.js のセットアップ
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
+          cache: 'npm'
 
-      - name: 依存パッケージのインストール
-        run: npm install
+      - name: 依存ライブラリのインストール
+        run: npm ci
 
-      - name: Playwrightブラウザのインストール
-        run: npx playwright install --with-deps chromium
-
-      - name: 実行モードの判定（時間・トリガー指定）
-        id: mode
-        run: |
-          # 手動実行(Run workflow)の場合は常に full (全項目チェック)
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "CHECK_TYPE=full" >> $GITHUB_ENV
-          else
-            # 自動実行(cron)の場合のみ、UTC時刻で分岐
-            # UTC 21:15 (JST 6:15) の場合は full モード
-            HOUR=$(date -u +%H)
-            if [ "$HOUR" -eq "21" ]; then
-              echo "CHECK_TYPE=full" >> $GITHUB_ENV
-            else
-              echo "CHECK_TYPE=stock" >> $GITHUB_ENV
-            fi
-          fi
-
-     - name: スクレイピング実行
+      - name: スクレイピングとGAS連携の実行
         env:
           GAS_WEBAPP_URL: ${{ secrets.GAS_WEBAPP_URL }}
         run: node scrape.js
+
+      - name: 変更されたデータをGitHubにコミット＆プッシュ
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add data.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Chore: Update product data [${{ steps.date.outputs.date }}]" && git push)
