@@ -5,7 +5,7 @@ const axios = require('axios');
 
 const GAS_WEBAPP_URL = process.env.GAS_WEBAPP_URL;
 const DATA_FILE = path.join(__dirname, 'data.json');
-const CONCURRENCY = 2; // 負荷軽減・確実な描画のため同時実行数を2に調整
+const CONCURRENCY = 2;
 
 function getJstTimestamp() {
   const now = new Date();
@@ -19,7 +19,6 @@ function getJstTimestamp() {
 async function scrapeProductPage(browser, url) {
   const page = await browser.newPage();
   
-  // 画像やフォントの読み込みをブロックして高速化
   await page.setRequestInterception(true);
   page.on('request', (req) => {
     if (['image', 'stylesheet', 'font', 'media'].includes(req.resourceType())) {
@@ -30,10 +29,7 @@ async function scrapeProductPage(browser, url) {
   });
 
   try {
-    // ネットワークが落ち着くまでしっかり待機
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
-    
-    // 価格や要素が表示されるまで追加で待機（最大3秒）
     await new Promise(r => setTimeout(r, 3000));
 
     // 1. 商品番号
@@ -49,7 +45,7 @@ async function scrapeProductPage(browser, url) {
       });
     } catch (e) {}
 
-    // 3. 価格・特売・期間・在庫の取得（DOMから直接抽出）
+    // 3. 価格・特売・期間・在庫の抽出（「オンライン価格」「値引き」「価格」構造に対応）
     const extractedData = await page.evaluate(() => {
       const bodyText = document.body.innerText;
 
@@ -59,36 +55,6 @@ async function scrapeProductPage(browser, url) {
       const oosText = !!document.querySelector('.out-of-stock, .not-available-online, [data-qa="out-of-stock"]');
       const isOutOfStock = isDisabled || oosText || bodyText.includes('在庫切れ') || bodyText.includes('現在オンラインではご購入いただけません');
 
-      // 価格取得ロジック（複数パターン対応）
-      let regularPrice = null;
-      let salePrice = null;
-      let isSale = false;
-
-      // セレクタから価格を取得してみる
-      const normalPriceEl = document.querySelector('.not-discounted-price, .product-price .price-value, [data-qa="product-price"]');
-      const discountPriceEl = document.querySelector('.discount-price, .sale-price');
-
-      if (normalPriceEl) {
-        const pText = normalPriceEl.innerText.replace(/[^0-9]/g, '');
-        if (pText) regularPrice = parseInt(pText, 10);
-      }
-
-      if (discountPriceEl) {
-        const sText = discountPriceEl.innerText.replace(/[^0-9]/g, '');
-        if (sText) {
-          salePrice = parseInt(sText, 10);
-          isSale = true;
-        }
-      }
-
-      // テキスト正規表現によるフォールバック
-      if (!regularPrice) {
-        const onlineMatch = bodyText.match(/オンライン価格\s*[¥￥]?\s*([0-9,]+)/) || bodyText.match(/価格\s*[¥￥]?\s*([0-9,]+)/);
-        if (onlineMatch) {
-          regularPrice = parseInt(onlineMatch[1].replace(/,/g, ''), 10);
-        }
-      }
-
       // 特売期間の抽出
       let startDate = '', endDate = '';
       const dateMatch = bodyText.match(/([0-9]{4}\/[0-9]{1,2}\/[0-9]{1,2})[〜~～\s]*([0-9]{4}\/[0-9]{1,2}\/[0-9]{1,2})/) ||
@@ -96,7 +62,41 @@ async function scrapeProductPage(browser, url) {
       if (dateMatch) {
         startDate = dateMatch[1];
         endDate = dateMatch[2];
+      }
+
+      // 「オンライン価格」の抽出（＝通常価格）
+      let regularPrice = null;
+      const onlineMatch = bodyText.match(/オンライン価格\s*[-–—〜~]?\s*[¥￥]?\s*([0-9,]+)/);
+      if (onlineMatch) {
+        regularPrice = parseInt(onlineMatch[1].replace(/,/g, ''), 10);
+      }
+
+      // 「値引き」の抽出
+      let discountAmount = 0;
+      const discountMatch = bodyText.match(/値引き\s*[-–—〜~]?\s*[¥￥]?\s*([0-9,]+)/);
+      if (discountMatch) {
+        discountAmount = parseInt(discountMatch[1].replace(/,/g, ''), 10);
+      }
+
+      // 「価格」の抽出（＝最終価格 / 特売価格）
+      let finalPrice = null;
+      const priceMatch = bodyText.match(/価格\s*[¥￥]?\s*([0-9,]+)/);
+      if (priceMatch) {
+        finalPrice = parseInt(priceMatch[1].replace(/,/g, ''), 10);
+      }
+
+      // 特売判定
+      let salePrice = null;
+      let isSale = false;
+
+      if (discountAmount > 0 || (regularPrice && finalPrice && regularPrice > finalPrice)) {
         isSale = true;
+        salePrice = finalPrice || (regularPrice - discountAmount);
+      } else {
+        // 通常時（オンライン価格が取れなかった場合は価格を採用）
+        if (!regularPrice && finalPrice) {
+          regularPrice = finalPrice;
+        }
       }
 
       return {
@@ -136,10 +136,9 @@ function compareData(oldData, newData) {
     outOfStock: []
   };
 
-  // 初回データ（oldDataが空）の場合、ログ用に全商品をチェックするか、差分のみ出すか
   for (const newItem of newData) {
     const oldItem = oldMap.get(newItem.id);
-    if (!oldItem) continue; // 初回登録時は比較対象がないためスキップ
+    if (!oldItem) continue;
 
     // 特売開始判定
     if (!oldItem.isSale && newItem.isSale) {
