@@ -263,3 +263,20 @@ function generateChangeLog(previousData, currentResults) {
 
   console.log('=== 処理完了 ===');
 })();
+const axios = require('axios'); // または node-fetch
+
+// GASのWebアプリURL（ステップ2で取得したもの）
+const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/YOUR_GAS_DEPLOYMENT_ID/exec';
+
+async function sendToGAS(timestamp, diffs) {
+  try {
+    console.log('GASへ変更履歴を送信中...');
+    await axios.post(GAS_WEBAPP_URL, {
+      timestamp: timestamp,
+      diffs: diffs
+    });
+    console.log('GASへの送信が完了しました！');
+  } catch (error) {
+    console.error('GAS送信エラー:', error.message);
+  }
+}
