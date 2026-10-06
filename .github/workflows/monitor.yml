@@ -45,8 +45,7 @@ jobs:
             fi
           fi
 
-      - name: スクレイピング実行
+     - name: スクレイピング実行
         env:
           GAS_WEBAPP_URL: ${{ secrets.GAS_WEBAPP_URL }}
-          CHECK_TYPE: ${{ env.CHECK_TYPE }}
         run: node scrape.js
