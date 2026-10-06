@@ -16,9 +16,9 @@
     "url": "https://www.costco.co.jp/c/Dove-Premium-Body-Wash-Refill-3kg/p/57777",
     "regularPrice": 1998,
     "salePrice": null,
-    "isSale": false,
-    "startDate": "",
-    "endDate": "",
+    "isSale": true,
+    "startDate": "2026/09/28",
+    "endDate": "2026/10/11",
     "inStock": true
   },
   {
