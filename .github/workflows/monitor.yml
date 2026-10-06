@@ -50,3 +50,7 @@ jobs:
           GAS_WEBAPP_URL: ${{ secrets.GAS_WEBAPP_URL }}
           CHECK_TYPE: ${{ env.CHECK_TYPE }}
         run: node scrape.js
+- name: Run Scraper
+        env:
+          GAS_WEBAPP_URL: ${{ secrets.GAS_WEBAPP_URL }}
+        run: node scrape.js
