@@ -44,12 +44,12 @@ async function scrapeProductPage(browser, url) {
       });
     } catch (e) {}
 
-    // 3. 価格・特売・期間・在庫の抽出（クラス ＆ ￥マーク絞り込み版）
+    // 3. 価格・特売・期間・在庫の抽出（ラベル起点・ピンポイント取得版）
     const extractedData = await page.evaluate(() => {
       const bodyText = document.body.innerText;
 
       // 在庫確認
-      const btn = document.querySelector('#add-to-cart-button, [data-qa="add-to-cart-button"], .add-to-cart');
+      const btn = document.querySelector('#add-to-cart-button, [data-qa="add-to-cart-button'], .add-to-cart');
       const isDisabled = btn ? (btn.disabled || btn.classList.contains('disabled')) : false;
       const oosText = !!document.querySelector('.out-of-stock, .not-available-online, [data-qa="out-of-stock"]');
       const isOutOfStock = isDisabled || oosText || bodyText.includes('在庫切れ') || bodyText.includes('現在オンラインではご購入いただけません');
@@ -74,59 +74,69 @@ async function scrapeProductPage(browser, url) {
         }
       }
 
-      // 価格候補の収集（notranslate.ng-star-inserted 等かつ ¥/￥ マークを含むものに限定）
-      const priceElements = Array.from(document.querySelectorAll('.notranslate.ng-star-inserted, .product-price, [data-qa="product-price"]'))
-        .filter(el => {
+      // 通常価格の取得：「オンライン価格」のラベルを持つ要素（または .price-tag）の周辺から探索
+      let regularPrice = null;
+      
+      // 方法A: ページ内のすべての要素から「オンライン価格」という文字を持つ要素を探す
+      const allElements = Array.from(document.querySelectorAll('*'));
+      const onlinePriceLabelEl = allElements.find(el => el.children.length === 0 && el.innerText.trim() === 'オンライン価格');
+      
+      if (onlinePriceLabelEl) {
+        // ラベルの親要素、またはその近傍から ¥ マークと ng-star-inserted を持つ要素を探す
+        let container = onlinePriceLabelEl.parentElement;
+        for (let i = 0; i < 3 && container; i++) {
+          const priceEl = container.querySelector('.notranslate.ng-star-inserted');
+          if (priceEl) {
+            const text = priceEl.innerText.trim();
+            if (text.includes('¥') || text.includes('￥')) {
+              const num = parseInt(text.replace(/[¥￥,]/g, ''), 10);
+              if (!isNaN(num)) {
+                regularPrice = num;
+                break;
+              }
+            }
+          }
+          container = container.parentElement;
+        }
+      }
+
+      // 方法Aで見つからない場合のフォールバック（.notranslate.ng-star-inserted の中で ¥ を含み、salePrice より大きいもの）
+      if (!regularPrice) {
+        const priceElements = Array.from(document.querySelectorAll('.notranslate.ng-star-inserted, .product-price, [data-qa="product-price"]'))
+          .filter(el => {
+            const text = el.innerText.trim();
+            return text.includes('¥') || text.includes('￥');
+          });
+
+        const prices = [];
+        priceElements.forEach(el => {
           const text = el.innerText.trim();
-          return text.includes('¥') || text.includes('￥');
+          if (text.match(/^[¥￥]?[0-9,]+$/, 'i')) {
+            const num = parseInt(text.replace(/[¥￥,]/g, ''), 10);
+            if (!isNaN(num) && num > 100 && !prices.includes(num)) {
+              prices.push(num);
+            }
+          }
         });
 
-      const prices = [];
-      priceElements.forEach(el => {
-        const text = el.innerText.trim();
-        if (text.match(/^[¥￥]?[0-9,]+$/)) {
-          const num = parseInt(text.replace(/[¥￥,]/g, ''), 10);
-          if (!isNaN(num) && num > 100 && !prices.includes(num)) {
-            prices.push(num);
+        if (salePrice !== null) {
+          const higherPrices = prices.filter(p => p > salePrice);
+          if (higherPrices.length > 0) {
+            regularPrice = Math.max(...higherPrices);
+          } else if (prices.length > 0) {
+            regularPrice = Math.max(...prices);
+          }
+        } else {
+          if (prices.length > 0) {
+            regularPrice = Math.max(...prices);
           }
         }
-      });
+      }
 
-      let regularPrice = null;
       let isSale = false;
-
-      if (salePrice !== null) {
+      if (salePrice !== null && regularPrice !== null && regularPrice > salePrice) {
         isSale = true;
-        const higherPrices = prices.filter(p => p > salePrice);
-        if (higherPrices.length > 0) {
-          regularPrice = Math.max(...higherPrices);
-        } else if (prices.length > 0) {
-          regularPrice = Math.max(...prices);
-        }
-      } else {
-        if (prices.length > 0) {
-          regularPrice = Math.max(...prices);
-        }
-      }
-
-      // フォールバック（テキストマッチ）
-      if (!regularPrice) {
-        const onlineMatch = bodyText.match(/オンライン価格\s*[-–—〜~]?\s*[¥￥]?\s*([0-9,]+)/);
-        if (onlineMatch) {
-          regularPrice = parseInt(onlineMatch[1].replace(/,/g, ''), 10);
-        }
-      }
-      if (!salePrice && isSale) {
-        const priceMatch = bodyText.match(/価格\s*[¥￥]?\s*([0-9,]+)/);
-        if (priceMatch) {
-          salePrice = parseInt(priceMatch[1].replace(/,/g, ''), 10);
-        }
-      }
-
-      // 特売の最終整合性チェック
-      if (regularPrice && salePrice && regularPrice > salePrice) {
-        isSale = true;
-      } else if (salePrice && !regularPrice) {
+      } else if (salePrice !== null && regularPrice === null) {
         regularPrice = salePrice;
         salePrice = null;
         isSale = false;
