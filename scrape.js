@@ -5,9 +5,8 @@ const axios = require('axios');
 
 const GAS_WEBAPP_URL = process.env.GAS_WEBAPP_URL;
 const DATA_FILE = path.join(__dirname, 'data.json');
-const CONCURRENCY = 3; // 3並列で高速処理
+const CONCURRENCY = 3;
 
-// 日本時間のタイムスタンプ生成
 function getJstTimestamp() {
   const now = new Date();
   return new Intl.DateTimeFormat('ja-JP', {
@@ -17,11 +16,9 @@ function getJstTimestamp() {
   }).format(now);
 }
 
-// 1ページのスクレイピング処理（高速化＋高精度価格抽出）
 async function scrapeProductPage(browser, url) {
   const page = await browser.newPage();
   
-  // 【高速化】画像・CSS・フォント・メディアの読み込みをブロック
   await page.setRequestInterception(true);
   page.on('request', (req) => {
     if (['image', 'stylesheet', 'font', 'media'].includes(req.resourceType())) {
@@ -32,19 +29,16 @@ async function scrapeProductPage(browser, url) {
   });
 
   try {
-    // 高速読み込み
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 40000 });
-    
-    // 要素の存在を少しだけ確認
     await page.waitForSelector('body', { timeout: 5000 });
 
     const bodyText = await page.evaluate(() => document.body.innerText);
 
-    // 商品ID
+    // 1. 商品番号
     const itemNumMatch = url.match(/\/p\/(\d+)/);
     const itemNumber = itemNumMatch ? itemNumMatch[1] : 'UNKNOWN';
 
-    // 商品名
+    // 2. 商品名
     let title = '名称未取得';
     try {
       title = await page.evaluate(() => {
@@ -53,7 +47,7 @@ async function scrapeProductPage(browser, url) {
       });
     } catch (e) {}
 
-    // 在庫状態
+    // 3. 在庫状況
     const isOutOfStock = await page.evaluate(() => {
       const btn = document.querySelector('#add-to-cart-button, [data-qa="add-to-cart-button"], .add-to-cart');
       const isDisabled = btn ? (btn.disabled || btn.classList.contains('disabled')) : false;
@@ -63,7 +57,7 @@ async function scrapeProductPage(browser, url) {
 
     const inStock = !isOutOfStock;
 
-    // 特売期間
+    // 4. 特売開始・特売終了日
     let startDate = '', endDate = '';
     const dateMatch = bodyText.match(/割引価格は[（\(](\d{4}\/\d{1,2}\/\d{1,2})[）\)]から[（\(](\d{4}\/\d{1,2}\/\d{1,2})[）\)]/);
     if (dateMatch) {
@@ -71,7 +65,7 @@ async function scrapeProductPage(browser, url) {
       endDate = dateMatch[2];
     }
 
-    // 厳密な価格抽出
+    // 5. 通常価格・特売価格
     const priceData = await page.evaluate(() => {
       const text = document.body.innerText;
       const onlineMatch = text.match(/オンライン価格\s*[¥￥]\s*([0-9,]+)/);
@@ -108,9 +102,7 @@ async function scrapeProductPage(browser, url) {
       if (singleMatch) regularPrice = parseInt(singleMatch[1].replace(/,/g, ''), 10);
     }
 
-    const salePeriod = (startDate && endDate) ? `${startDate}〜${endDate}` : '';
-
-    console.log(`  └ [${itemNumber}] ${title} | 通常:${regularPrice} | 特売:${salePrice || 'なし'} | 在庫:${inStock ? 'あり' : '切れ'}`);
+    console.log(`  └ [${itemNumber}] ${title} | 通常:${regularPrice}円 | 特売:${salePrice ? salePrice + '円' : 'なし'} | 期間:${startDate}〜${endDate} | 在庫:${inStock ? 'あり' : '切れ'}`);
 
     return {
       id: itemNumber,
@@ -119,7 +111,8 @@ async function scrapeProductPage(browser, url) {
       regularPrice,
       salePrice,
       isSale,
-      salePeriod,
+      startDate,
+      endDate,
       inStock
     };
 
@@ -131,7 +124,6 @@ async function scrapeProductPage(browser, url) {
   }
 }
 
-// 5カテゴリの差分比較
 function compareData(oldData, newData) {
   const oldMap = new Map(oldData.map(item => [item.id, item]));
   const diffs = {
@@ -144,9 +136,9 @@ function compareData(oldData, newData) {
 
   for (const newItem of newData) {
     const oldItem = oldMap.get(newItem.id);
-    if (!oldItem) continue; // 初回は過去データがないためスキップ
+    if (!oldItem) continue;
 
-    // 1. 新規特売
+    // 特売開始判定
     if (!oldItem.isSale && newItem.isSale) {
       diffs.newSale.push({
         id: newItem.id,
@@ -154,11 +146,12 @@ function compareData(oldData, newData) {
         regularPrice: oldItem.regularPrice || newItem.regularPrice,
         salePrice: newItem.salePrice,
         diff: (oldItem.regularPrice || newItem.regularPrice) - newItem.salePrice,
-        period: newItem.salePeriod
+        startDate: newItem.startDate,
+        endDate: newItem.endDate
       });
     }
 
-    // 2. 通常価格の値下がり
+    // 値下がり判定
     if (!oldItem.isSale && !newItem.isSale && oldItem.regularPrice && newItem.regularPrice && newItem.regularPrice < oldItem.regularPrice) {
       diffs.priceDown.push({
         id: newItem.id,
@@ -169,7 +162,7 @@ function compareData(oldData, newData) {
       });
     }
 
-    // 3. 通常価格の値上がり
+    // 値上がり判定
     if (!oldItem.isSale && !newItem.isSale && oldItem.regularPrice && newItem.regularPrice && newItem.regularPrice > oldItem.regularPrice) {
       diffs.priceUp.push({
         id: newItem.id,
@@ -180,12 +173,12 @@ function compareData(oldData, newData) {
       });
     }
 
-    // 4. 在庫復活
+    // 在庫復活判定
     if (!oldItem.inStock && newItem.inStock) {
       diffs.backInStock.push({ id: newItem.id, name: newItem.name });
     }
 
-    // 5. 在庫切れ
+    // 在庫切れ判定
     if (oldItem.inStock && !newItem.inStock) {
       diffs.outOfStock.push({ id: newItem.id, name: newItem.name });
     }
@@ -194,7 +187,6 @@ function compareData(oldData, newData) {
   return diffs;
 }
 
-// GAS送信処理
 async function sendToGAS(timestamp, diffs) {
   if (!GAS_WEBAPP_URL) {
     console.warn('⚠️ GAS_WEBAPP_URLが設定されていないため送信をスキップします。');
@@ -209,16 +201,14 @@ async function sendToGAS(timestamp, diffs) {
   }
 }
 
-// メイン実行
 (async () => {
-  console.log('=== コストコ監視実行開始 (高速化＆5カテゴリモード) ===');
+  console.log('=== コストコ監視実行開始 (B列URL読み込みモード) ===');
 
   if (!GAS_WEBAPP_URL) {
     console.error('エラー: GAS_WEBAPP_URL が設定されていません。');
     process.exit(1);
   }
 
-  // 1. GASから監視対象URLリストを取得
   let urls = [];
   try {
     const res = await axios.get(GAS_WEBAPP_URL);
@@ -229,19 +219,17 @@ async function sendToGAS(timestamp, diffs) {
   }
 
   if (!Array.isArray(urls) || urls.length === 0) {
-    console.log('監視対象のURLが登録されていません。');
+    console.log('監視対象のURLが登録されていません。（監視リストのB列を確認してください）');
     return;
   }
 
   console.log(`対象件数: ${urls.length} 件`);
 
-  // 2. ブラウザ起動
   const browser = await puppeteer.launch({
     headless: "new",
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
 
-  // 3. 3並列で高速スクレイピング実行
   const newData = [];
   for (let i = 0; i < urls.length; i += CONCURRENCY) {
     const chunk = urls.slice(i, i + CONCURRENCY);
@@ -252,7 +240,6 @@ async function sendToGAS(timestamp, diffs) {
 
   await browser.close();
 
-  // 4. 過去データの読み込みと比較
   let oldData = [];
   if (fs.existsSync(DATA_FILE)) {
     try {
@@ -263,10 +250,8 @@ async function sendToGAS(timestamp, diffs) {
   const timestamp = getJstTimestamp();
   const diffs = compareData(oldData, newData);
 
-  // 5. GASへデータ送信
   await sendToGAS(timestamp, diffs);
 
-  // 6. 今回のデータをdata.jsonに保存（次回比較用）
   fs.writeFileSync(DATA_FILE, JSON.stringify(newData, null, 2), 'utf-8');
   console.log('=== 全処理完了 ===');
 })();
