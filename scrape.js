@@ -44,51 +44,60 @@ async function scrapeProductPage(page, url, checkType) {
     let startDate = '';
     let endDate = '';
 
-    // 1. 特売期間の抽出（「割引価格はYYYY/MM/DDからYYYY/MM/DDで有効です。」形式）
+    // 1. 特売期間の抽出
     const dateMatch = bodyText.match(/割引価格は[（\(](\d{4}\/\d{1,2}\/\d{1,2})[）\)]から[（\(](\d{4}\/\d{1,2}\/\d{1,2})[）\)]/);
     if (dateMatch) {
       startDate = dateMatch[1];
       endDate = dateMatch[2];
     }
 
-    // 2. DOM要素からの正確な価格ブロック取得
-    // コストコページの構造（オンライン価格 / 値引き / 価格）を個別要素で安全に抜き出す
+    // 2. 価格のクリーンな抽出（「オンライン価格」と、値引きではない独立した「価格」を厳密に区別）
     const priceData = await page.evaluate(() => {
       const text = document.body.innerText;
       
-      // オンライン価格の抽出
+      // ① 「オンライン価格」の直後にある金額（例: オンライン価格 ¥1,998）
       const onlineMatch = text.match(/オンライン価格\s*[¥￥]\s*([0-9,]+)/);
-      // 最終的な「価格」または「オフ後価格」の抽出（※「値引き -¥820」などのマイナス記号に惑わされないよう厳密に取得）
-      const finalMatch = text.match(/(?:価格|オフ後価格|割引価格)\s*[¥￥]\s*([0-9,]+)/);
       
+      // ② 「値引き」の行を除外した上で、独立した「価格 ¥XXXX」の金額を狙う
+      // （「値引き - ¥370」のようなマイナス付きの金額や、文言中の数字を避ける）
+      let finalVal = '';
+      
+      // 改行区切りで「価格」という単語の独立した行を探す
+      const lines = text.split('\n').map(l => l.trim());
+      for (let i = 0; i < lines.length; i++) {
+        // 「価格」という文字だけの行、または「価格 ¥1,628」のようになっている行を検出
+        if (lines[i] === '価格' && lines[i + 1] && /^[¥￥][0-9,]+$/.test(lines[i + 1])) {
+          finalVal = lines[i + 1].replace(/[¥￥,]/g, '');
+          break;
+        }
+        // 「価格 ¥1,628」が1行に収まっているパターン
+        const matchInLine = lines[i].match(/^価格\s*[¥￥]\s*([0-9,]+)$/);
+        if (matchInLine) {
+          finalVal = matchInLine[1].replace(/,/g, '');
+          break;
+        }
+      }
+
       return {
         online: onlineMatch ? onlineMatch[1].replace(/,/g, '') : '',
-        final: finalMatch ? finalMatch[1].replace(/,/g, '') : ''
+        final: finalVal
       };
     });
 
     if (dateMatch || priceData.online) {
       normalPrice = priceData.online;
-      
-      // 特売時：最終価格が取れており、かつオンライン価格と異なる場合にセール価格とする
+
+      // 最終価格（特売価格）が存在し、かつオンライン価格と違う場合のみ特売価格として採用
       if (priceData.final && priceData.final !== priceData.online) {
         salePrice = priceData.final;
       } else {
-        // フォールバック：もし個別のラベルが綺麗に取れなかった場合の補助ロジック
-        const allPrices = [...bodyText.matchAll(/[¥￥]\s*([0-9,]+)/g)]
-          .map(m => parseInt(m[1].replace(/,/g, ''), 10))
-          .filter(p => p > 100); // 100円未満の端数などを除外
-
-        const uniquePrices = [...new Set(allPrices)].sort((a, b) => b - a);
-        if (uniquePrices.length >= 2 && dateMatch) {
-          normalPrice = String(uniquePrices[0]);
-          salePrice = String(uniquePrices[1]);
-        } else if (uniquePrices.length > 0) {
-          normalPrice = String(uniquePrices[0]);
-        }
+        // 特売期間はないが「オンライン価格」のみの通常商品の場合
+        salePrice = '';
+        startDate = '';
+        endDate = '';
       }
     } else {
-      // 特売情報・オンライン価格表記がない通常時
+      // 特売情報もオンライン価格表記もない場合のフォールバック（通常時）
       const singleMatch = bodyText.match(/価格\s*[¥￥]\s*([0-9,]+)/) || bodyText.match(/¥\s*([0-9,]+)/);
       if (singleMatch) {
         normalPrice = singleMatch[1].replace(/,/g, '');
