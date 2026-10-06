@@ -266,9 +266,15 @@ function generateChangeLog(previousData, currentResults) {
 const axios = require('axios'); // または node-fetch
 
 // GASのWebアプリURL（ステップ2で取得したもの）
-const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/YOUR_GAS_DEPLOYMENT_ID/exec';
+// GitHub SecretsからURLを読み込みます
+const GAS_WEBAPP_URL = process.env.GAS_WEBAPP_URL;
 
 async function sendToGAS(timestamp, diffs) {
+  if (!GAS_WEBAPP_URL) {
+    console.error('GAS_WEBAPP_URL が設定されていません');
+    return;
+  }
+  
   try {
     console.log('GASへ変更履歴を送信中...');
     await axios.post(GAS_WEBAPP_URL, {
