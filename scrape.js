@@ -44,12 +44,12 @@ async function scrapeProductPage(browser, url) {
       });
     } catch (e) {}
 
-    // 3. 価格・特売・期間・在庫の抽出（ラベル起点・ピンポイント取得版）
+    // 3. 価格・特売・期間・在庫の抽出（構文修正版）
     const extractedData = await page.evaluate(() => {
       const bodyText = document.body.innerText;
 
       // 在庫確認
-      const btn = document.querySelector('#add-to-cart-button, [data-qa="add-to-cart-button'], .add-to-cart');
+      const btn = document.querySelector('#add-to-cart-button, [data-qa="add-to-cart-button"], .add-to-cart');
       const isDisabled = btn ? (btn.disabled || btn.classList.contains('disabled')) : false;
       const oosText = !!document.querySelector('.out-of-stock, .not-available-online, [data-qa="out-of-stock"]');
       const isOutOfStock = isDisabled || oosText || bodyText.includes('在庫切れ') || bodyText.includes('現在オンラインではご購入いただけません');
@@ -74,15 +74,13 @@ async function scrapeProductPage(browser, url) {
         }
       }
 
-      // 通常価格の取得：「オンライン価格」のラベルを持つ要素（または .price-tag）の周辺から探索
+      // 通常価格の取得：「オンライン価格」のラベルを持つ要素の周辺から探索
       let regularPrice = null;
       
-      // 方法A: ページ内のすべての要素から「オンライン価格」という文字を持つ要素を探す
       const allElements = Array.from(document.querySelectorAll('*'));
       const onlinePriceLabelEl = allElements.find(el => el.children.length === 0 && el.innerText.trim() === 'オンライン価格');
       
       if (onlinePriceLabelEl) {
-        // ラベルの親要素、またはその近傍から ¥ マークと ng-star-inserted を持つ要素を探す
         let container = onlinePriceLabelEl.parentElement;
         for (let i = 0; i < 3 && container; i++) {
           const priceEl = container.querySelector('.notranslate.ng-star-inserted');
@@ -100,7 +98,7 @@ async function scrapeProductPage(browser, url) {
         }
       }
 
-      // 方法Aで見つからない場合のフォールバック（.notranslate.ng-star-inserted の中で ¥ を含み、salePrice より大きいもの）
+      // フォールバック
       if (!regularPrice) {
         const priceElements = Array.from(document.querySelectorAll('.notranslate.ng-star-inserted, .product-price, [data-qa="product-price"]'))
           .filter(el => {
@@ -111,7 +109,7 @@ async function scrapeProductPage(browser, url) {
         const prices = [];
         priceElements.forEach(el => {
           const text = el.innerText.trim();
-          if (text.match(/^[¥￥]?[0-9,]+$/, 'i')) {
+          if (text.match(/^[¥￥]?[0-9,]+$/)) {
             const num = parseInt(text.replace(/[¥￥,]/g, ''), 10);
             if (!isNaN(num) && num > 100 && !prices.includes(num)) {
               prices.push(num);
@@ -183,7 +181,6 @@ function compareData(oldData, newData) {
     const oldItem = oldMap.get(newItem.id);
     if (!oldItem) continue;
 
-    // 特売開始判定
     if (!oldItem.isSale && newItem.isSale) {
       diffs.newSale.push({
         id: newItem.id,
@@ -196,7 +193,6 @@ function compareData(oldData, newData) {
       });
     }
 
-    // 値下がり判定
     if (!oldItem.isSale && !newItem.isSale && oldItem.regularPrice && newItem.regularPrice && newItem.regularPrice < oldItem.regularPrice) {
       diffs.priceDown.push({
         id: newItem.id,
@@ -207,7 +203,6 @@ function compareData(oldData, newData) {
       });
     }
 
-    // 値上がり判定
     if (!oldItem.isSale && !newItem.isSale && oldItem.regularPrice && newItem.regularPrice && newItem.regularPrice > oldItem.regularPrice) {
       diffs.priceUp.push({
         id: newItem.id,
@@ -218,12 +213,10 @@ function compareData(oldData, newData) {
       });
     }
 
-    // 在庫復活判定
     if (!oldItem.inStock && newItem.inStock) {
       diffs.backInStock.push({ id: newItem.id, name: newItem.name });
     }
 
-    // 在庫切れ判定
     if (oldItem.inStock && !newItem.inStock) {
       diffs.outOfStock.push({ id: newItem.id, name: newItem.name });
     }
