@@ -44,7 +44,7 @@ async function scrapeProductPage(browser, url) {
       });
     } catch (e) {}
 
-    // 3. 価格・特売・期間・在庫の抽出（安全な trim 処理版）
+    // 3. 価格・特売・期間・在庫の抽出
     const extractedData = await page.evaluate(() => {
       const bodyText = document.body.innerText || '';
 
@@ -74,33 +74,62 @@ async function scrapeProductPage(browser, url) {
         }
       }
 
-      // 通常価格の取得：「オンライン価格」のラベルを持つ要素の周辺から探索
+      // 通常価格の取得
       let regularPrice = null;
-      
-      const allElements = Array.from(document.querySelectorAll('*'));
-      const onlinePriceLabelEl = allElements.find(el => el.children.length === 0 && (el.innerText || '').trim() === 'オンライン価格');
-      
-      if (onlinePriceLabelEl) {
-        let container = onlinePriceLabelEl.parentElement;
-        for (let i = 0; i < 3 && container; i++) {
-          const priceEl = container.querySelector('.notranslate.ng-star-inserted');
-          if (priceEl) {
-            const text = (priceEl.innerText || '').trim();
-            if (text.includes('¥') || text.includes('￥')) {
-              const num = parseInt(text.replace(/[¥￥,]/g, ''), 10);
-              if (!isNaN(num)) {
-                regularPrice = num;
-                break;
-              }
+
+      // 1. 最優先: .price-original クラス内の価格要素を取得（特売あり・なし共通）
+      const priceOriginalEl = document.querySelector('.price-original');
+      if (priceOriginalEl) {
+        const notranslateEl = priceOriginalEl.querySelector('.notranslate');
+        if (notranslateEl) {
+          const text = (notranslateEl.innerText || '').trim();
+          const num = parseInt(text.replace(/[¥￥,]/g, ''), 10);
+          if (!isNaN(num)) {
+            regularPrice = num;
+          }
+        }
+        
+        // .notranslate がない場合は .price-original 内の「¥」を含むテキストから抽出
+        if (!regularPrice) {
+          const text = (priceOriginalEl.innerText || '').trim();
+          const match = text.match(/[¥￥]\s*([0-9,]+)/);
+          if (match) {
+            const num = parseInt(match[1].replace(/,/g, ''), 10);
+            if (!isNaN(num)) {
+              regularPrice = num;
             }
           }
-          container = container.parentElement;
         }
       }
 
-      // フォールバック
+      // 2. 第2候補: 「オンライン価格」ラベルを持つ要素の周辺から探索（従来のバックアップ）
       if (!regularPrice) {
-        const priceElements = Array.from(document.querySelectorAll('.notranslate.ng-star-inserted, .product-price, [data-qa="product-price"]'))
+        const allElements = Array.from(document.querySelectorAll('*'));
+        const onlinePriceLabelEl = allElements.find(el => el.children.length === 0 && (el.innerText || '').trim() === 'オンライン価格');
+        
+        if (onlinePriceLabelEl) {
+          let container = onlinePriceLabelEl.parentElement;
+          for (let i = 0; i < 3 && container; i++) {
+            const priceEl = container.querySelector('.notranslate.ng-star-inserted, .price-value');
+            if (priceEl) {
+              const text = (priceEl.innerText || '').trim();
+              if (text.includes('¥') || text.includes('￥')) {
+                const num = parseInt(text.replace(/[¥￥,]/g, ''), 10);
+                if (!isNaN(num)) {
+                  regularPrice = num;
+                  break;
+                }
+              }
+            }
+            container = container.parentElement;
+          }
+        }
+      }
+
+      // 3. 第3候補: メインエリア内に限定したフォールバック
+      if (!regularPrice) {
+        const mainContainer = document.querySelector('.product-price-detail, .product-details, #product-details') || document.body;
+        const priceElements = Array.from(mainContainer.querySelectorAll('.notranslate.ng-star-inserted, .product-price, [data-qa="product-price"]'))
           .filter(el => {
             const text = (el.innerText || '').trim();
             return text.includes('¥') || text.includes('￥');
@@ -150,146 +179,4 @@ async function scrapeProductPage(browser, url) {
       };
     });
 
-    console.log(`  └ [${itemNumber}] ${title} | 通常:${extractedData.regularPrice ? extractedData.regularPrice + '円' : 'null'} | 特売:${extractedData.salePrice ? extractedData.salePrice + '円' : 'なし'} | 期間:${extractedData.startDate}〜${extractedData.endDate} | 在庫:${extractedData.inStock ? 'あり' : '切れ'}`);
-
-    return {
-      id: itemNumber,
-      name: title,
-      url,
-      ...extractedData
-    };
-
-  } catch (err) {
-    console.error(`  └ [エラー] ${url}: ${err.message}`);
-    return null;
-  } finally {
-    await page.close();
-  }
-}
-
-function compareData(oldData, newData) {
-  const oldMap = new Map(oldData.map(item => [item.id, item]));
-  const diffs = {
-    newSale: [],
-    priceDown: [],
-    priceUp: [],
-    backInStock: [],
-    outOfStock: []
-  };
-
-  for (const newItem of newData) {
-    const oldItem = oldMap.get(newItem.id);
-    if (!oldItem) continue;
-
-    if (!oldItem.isSale && newItem.isSale) {
-      diffs.newSale.push({
-        id: newItem.id,
-        name: newItem.name,
-        regularPrice: oldItem.regularPrice || newItem.regularPrice,
-        salePrice: newItem.salePrice,
-        diff: (oldItem.regularPrice || newItem.regularPrice) - newItem.salePrice,
-        startDate: newItem.startDate,
-        endDate: newItem.endDate
-      });
-    }
-
-    if (!oldItem.isSale && !newItem.isSale && oldItem.regularPrice && newItem.regularPrice && newItem.regularPrice < oldItem.regularPrice) {
-      diffs.priceDown.push({
-        id: newItem.id,
-        name: newItem.name,
-        oldPrice: oldItem.regularPrice,
-        newPrice: newItem.regularPrice,
-        diff: oldItem.regularPrice - newItem.regularPrice
-      });
-    }
-
-    if (!oldItem.isSale && !newItem.isSale && oldItem.regularPrice && newItem.regularPrice && newItem.regularPrice > oldItem.regularPrice) {
-      diffs.priceUp.push({
-        id: newItem.id,
-        name: newItem.name,
-        oldPrice: oldItem.regularPrice,
-        newPrice: newItem.regularPrice,
-        diff: newItem.regularPrice - oldItem.regularPrice
-      });
-    }
-
-    if (!oldItem.inStock && newItem.inStock) {
-      diffs.backInStock.push({ id: newItem.id, name: newItem.name });
-    }
-
-    if (oldItem.inStock && !newItem.inStock) {
-      diffs.outOfStock.push({ id: newItem.id, name: newItem.name });
-    }
-  }
-
-  return diffs;
-}
-
-async function sendToGAS(timestamp, diffs, items) {
-  if (!GAS_WEBAPP_URL) {
-    console.warn('⚠️ GAS_WEBAPP_URLが設定されていないため送信をスキップします。');
-    return;
-  }
-  try {
-    console.log('🚀 GASへデータを送信中...');
-    await axios.post(GAS_WEBAPP_URL, { timestamp, diffs, items });
-    console.log('✅ GASへの送信が完了しました！');
-  } catch (error) {
-    console.error('❌ GAS送信エラー:', error.message);
-  }
-}
-
-(async () => {
-  console.log('=== コストコ監視実行開始 ===');
-
-  if (!GAS_WEBAPP_URL) {
-    console.error('エラー: GAS_WEBAPP_URL が設定されていません。');
-    process.exit(1);
-  }
-
-  let urls = [];
-  try {
-    const res = await axios.get(GAS_WEBAPP_URL);
-    urls = res.data;
-  } catch (err) {
-    console.error('URLリストの取得に失敗しました:', err.message);
-    process.exit(1);
-  }
-
-  if (!Array.isArray(urls) || urls.length === 0) {
-    console.log('監視対象のURLが登録されていません。');
-    return;
-  }
-
-  console.log(`対象件数: ${urls.length} 件`);
-
-  const browser = await puppeteer.launch({
-    headless: "new",
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
-
-  const newData = [];
-  for (let i = 0; i < urls.length; i += CONCURRENCY) {
-    const chunk = urls.slice(i, i + CONCURRENCY);
-    console.log(`[進捗] ${i + 1}〜${Math.min(i + CONCURRENCY, urls.length)} / ${urls.length} 件目を処理中...`);
-    const results = await Promise.all(chunk.map(url => scrapeProductPage(browser, url)));
-    newData.push(...results.filter(r => r !== null));
-  }
-
-  await browser.close();
-
-  let oldData = [];
-  if (fs.existsSync(DATA_FILE)) {
-    try {
-      oldData = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
-    } catch (e) {}
-  }
-
-  const timestamp = getJstTimestamp();
-  const diffs = compareData(oldData, newData);
-
-  await sendToGAS(timestamp, diffs, newData);
-
-  fs.writeFileSync(DATA_FILE, JSON.stringify(newData, null, 2), 'utf-8');
-  console.log('=== 全処理完了 ===');
-})();
+    console.log(`  └
