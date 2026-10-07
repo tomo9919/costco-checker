@@ -179,4 +179,146 @@ async function scrapeProductPage(browser, url) {
       };
     });
 
-    console.log(`  └
+    console.log(`  └ [${itemNumber}] ${title} | 通常:${extractedData.regularPrice ? extractedData.regularPrice + '円' : 'null'} | 特売:${extractedData.salePrice ? extractedData.salePrice + '円' : 'なし'} | 期間:${extractedData.startDate}〜${extractedData.endDate} | 在庫:${extractedData.inStock ? 'あり' : '切れ'}`);
+
+    return {
+      id: itemNumber,
+      name: title,
+      url,
+      ...extractedData
+    };
+
+  } catch (err) {
+    console.error(`  └ [エラー] ${url}: ${err.message}`);
+    return null;
+  } finally {
+    await page.close();
+  }
+}
+
+function compareData(oldData, newData) {
+  const oldMap = new Map(oldData.map(item => [item.id, item]));
+  const diffs = {
+    newSale: [],
+    priceDown: [],
+    priceUp: [],
+    backInStock: [],
+    outOfStock: []
+  };
+
+  for (const newItem of newData) {
+    const oldItem = oldMap.get(newItem.id);
+    if (!oldItem) continue;
+
+    if (!oldItem.isSale && newItem.isSale) {
+      diffs.newSale.push({
+        id: newItem.id,
+        name: newItem.name,
+        regularPrice: oldItem.regularPrice || newItem.regularPrice,
+        salePrice: newItem.salePrice,
+        diff: (oldItem.regularPrice || newItem.regularPrice) - newItem.salePrice,
+        startDate: newItem.startDate,
+        endDate: newItem.endDate
+      });
+    }
+
+    if (!oldItem.isSale && !newItem.isSale && oldItem.regularPrice && newItem.regularPrice && newItem.regularPrice < oldItem.regularPrice) {
+      diffs.priceDown.push({
+        id: newItem.id,
+        name: newItem.name,
+        oldPrice: oldItem.regularPrice,
+        newPrice: newItem.regularPrice,
+        diff: oldItem.regularPrice - newItem.regularPrice
+      });
+    }
+
+    if (!oldItem.isSale && !newItem.isSale && oldItem.regularPrice && newItem.regularPrice && newItem.regularPrice > oldItem.regularPrice) {
+      diffs.priceUp.push({
+        id: newItem.id,
+        name: newItem.name,
+        oldPrice: oldItem.regularPrice,
+        newPrice: newItem.regularPrice,
+        diff: newItem.regularPrice - oldItem.regularPrice
+      });
+    }
+
+    if (!oldItem.inStock && newItem.inStock) {
+      diffs.backInStock.push({ id: newItem.id, name: newItem.name });
+    }
+
+    if (oldItem.inStock && !newItem.inStock) {
+      diffs.outOfStock.push({ id: newItem.id, name: newItem.name });
+    }
+  }
+
+  return diffs;
+}
+
+async function sendToGAS(timestamp, diffs, items) {
+  if (!GAS_WEBAPP_URL) {
+    console.warn('⚠️ GAS_WEBAPP_URLが設定されていないため送信をスキップします。');
+    return;
+  }
+  try {
+    console.log('🚀 GASへデータを送信中...');
+    await axios.post(GAS_WEBAPP_URL, { timestamp, diffs, items });
+    console.log('✅ GASへの送信が完了しました！');
+  } catch (error) {
+    console.error('❌ GAS送信エラー:', error.message);
+  }
+}
+
+(async () => {
+  console.log('=== コストコ監視実行開始 ===');
+
+  if (!GAS_WEBAPP_URL) {
+    console.error('エラー: GAS_WEBAPP_URL が設定されていません。');
+    process.exit(1);
+  }
+
+  let urls = [];
+  try {
+    const res = await axios.get(GAS_WEBAPP_URL);
+    urls = res.data;
+  } catch (err) {
+    console.error('URLリストの取得に失敗しました:', err.message);
+    process.exit(1);
+  }
+
+  if (!Array.isArray(urls) || urls.length === 0) {
+    console.log('監視対象のURLが登録されていません。');
+    return;
+  }
+
+  console.log(`対象件数: ${urls.length} 件`);
+
+  const browser = await puppeteer.launch({
+    headless: "new",
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  });
+
+  const newData = [];
+  for (let i = 0; i < urls.length; i += CONCURRENCY) {
+    const chunk = urls.slice(i, i + CONCURRENCY);
+    console.log(`[進捗] ${i + 1}〜${Math.min(i + CONCURRENCY, urls.length)} / ${urls.length} 件目を処理中...`);
+    const results = await Promise.all(chunk.map(url => scrapeProductPage(browser, url)));
+    newData.push(...results.filter(r => r !== null));
+  }
+
+  await browser.close();
+
+  let oldData = [];
+  if (fs.existsSync(DATA_FILE)) {
+    try {
+      oldData = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+    } catch (e) {}
+  }
+
+  const timestamp = getJstTimestamp();
+  const diffs = compareData(oldData, newData);
+
+  await sendToGAS(timestamp, diffs, newData);
+
+  fs.writeFileSync(DATA_FILE, JSON.stringify(newData, null, 2), 'utf-8');
+  console.log('=== 全処理完了 ===');
+})();
