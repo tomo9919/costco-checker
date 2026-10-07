@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const GAS_WEBAPP_URL = process.env.GAS_WEBAPP_URL;
+const CHECK_MODE = process.env.CHECK_MODE; // 'stock_only' かどうかを判定
 const DATA_FILE = path.join(__dirname, 'data.json');
 const CONCURRENCY = 2;
 
@@ -206,10 +207,25 @@ function compareData(oldData, newData) {
     outOfStock: []
   };
 
+  const isStockOnly = CHECK_MODE === 'stock_only';
+
   for (const newItem of newData) {
     const oldItem = oldMap.get(newItem.id);
     if (!oldItem) continue;
 
+    // 在庫チェック（全モード共通）
+    if (!oldItem.inStock && newItem.inStock) {
+      diffs.backInStock.push({ id: newItem.id, name: newItem.name });
+    }
+
+    if (oldItem.inStock && !newItem.inStock) {
+      diffs.outOfStock.push({ id: newItem.id, name: newItem.name });
+    }
+
+    // 在庫のみモードの場合は価格比較を行わずスキップ
+    if (isStockOnly) continue;
+
+    // 以下、全項目チェックモード時のみ実行
     if (!oldItem.isSale && newItem.isSale) {
       diffs.newSale.push({
         id: newItem.id,
@@ -241,14 +257,6 @@ function compareData(oldData, newData) {
         diff: newItem.regularPrice - oldItem.regularPrice
       });
     }
-
-    if (!oldItem.inStock && newItem.inStock) {
-      diffs.backInStock.push({ id: newItem.id, name: newItem.name });
-    }
-
-    if (oldItem.inStock && !newItem.inStock) {
-      diffs.outOfStock.push({ id: newItem.id, name: newItem.name });
-    }
   }
 
   return diffs;
@@ -269,7 +277,7 @@ async function sendToGAS(timestamp, diffs, items) {
 }
 
 (async () => {
-  console.log('=== コストコ監視実行開始 ===');
+  console.log(`=== コストコ監視実行開始 (モード: ${CHECK_MODE === 'stock_only' ? '在庫のみ' : '全項目'}) ===`);
 
   if (!GAS_WEBAPP_URL) {
     console.error('エラー: GAS_WEBAPP_URL が設定されていません。');
