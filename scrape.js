@@ -213,12 +213,15 @@ function compareData(oldData, newData) {
     const oldItem = oldMap.get(newItem.id);
     if (!oldItem) continue;
 
-    // 在庫チェック（全モード共通）
-    if (!oldItem.inStock && newItem.inStock) {
+    // 在庫チェック（全モード共通：Boolean型に明示的に変換して比較）
+    const oldInStock = Boolean(oldItem.inStock);
+    const newInStock = Boolean(newItem.inStock);
+
+    if (!oldInStock && newInStock) {
       diffs.backInStock.push({ id: newItem.id, name: newItem.name });
     }
 
-    if (oldItem.inStock && !newItem.inStock) {
+    if (oldInStock && !newInStock) {
       diffs.outOfStock.push({ id: newItem.id, name: newItem.name });
     }
 
