@@ -2,8 +2,8 @@ name: Costco Online Monitor
 
 on:
   schedule:
-    # 毎日 日本時間 07:00 (UTC 22:00) に自動実行
-    - cron: '0 22 * * *'
+    # 日本時間 06:00(21:00 UTC), 12:00(03:00 UTC), 18:00(09:00 UTC), 21:00(12:00 UTC)
+    - cron: '0 21,3,9,12 * * *'
   workflow_dispatch: # 手動実行ボタンを有効化
 
 jobs:
@@ -27,7 +27,18 @@ jobs:
       - name: スクレイピングとGAS連携の実行
         env:
           GAS_WEBAPP_URL: ${{ secrets.GAS_WEBAPP_URL }}
-        run: node scrape.js
+        run: |
+          # JSTの現在時刻（時）を取得
+          HOUR=$(TZ='Asia/Tokyo' date +'%H')
+          
+          # 06時以外（12時, 18時, 21時など）は在庫のみモードで実行
+          if [ "$HOUR" -ne "06" ]; then
+            echo "📦 在庫状況のみのチェックモードで実行します (実行時刻: ${HOUR}時)"
+            CHECK_MODE=stock_only node scrape.js
+          else
+            echo "🔍 全項目のチェックモードで実行します (実行時刻: ${HOUR}時)"
+            node scrape.js
+          fi
 
       - name: 変更されたデータをGitHubにコミット＆プッシュ
         run: |
