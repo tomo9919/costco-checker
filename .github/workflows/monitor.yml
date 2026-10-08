@@ -9,6 +9,8 @@ on:
 jobs:
   scrape-and-notify:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # リポジトリへの write 権限を許可（data.json の push に必須）
 
     steps:
       - name: リポジトリのチェックアウト
@@ -45,8 +47,8 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # npm install で発生した package.json などの一時的な変更を破棄
-          git checkout -- .
+          # package.json などの一時的な変更のみを破棄（data.json は保持）
+          git checkout -- package*.json || true
           
           if [ -f data.json ]; then
             git add data.json
