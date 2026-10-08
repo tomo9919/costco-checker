@@ -68,7 +68,7 @@ async function scrapeProductPage(browser, url) {
       });
     } catch (e) {}
 
-    // 3. 価格・特売・期間・在庫の抽出（既存ロジックを完全保持）
+    // 3. 価格・特売・期間・在庫の抽出
     const extractedData = await page.evaluate(() => {
       const bodyText = document.body.innerText || '';
 
@@ -101,7 +101,7 @@ async function scrapeProductPage(browser, url) {
       // 通常価格の取得
       let regularPrice = null;
 
-      // 1. 最優先: .price-original クラス内の価格要素を取得（特売あり・なし共通）
+      // 1. 最優先: .price-original クラス内の価格要素を取得
       const priceOriginalEl = document.querySelector('.price-original');
       if (priceOriginalEl) {
         const notranslateEl = priceOriginalEl.querySelector('.notranslate');
@@ -350,18 +350,31 @@ async function sendToGAS(timestamp, diffs, items) {
 
   await browser.close();
 
-  let oldData = [];
+  // --- 履歴データの読み込み（配列として保持） ---
+  let history = [];
   if (fs.existsSync(DATA_FILE)) {
     try {
-      oldData = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
-    } catch (e) {}
+      const fileData = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+      if (Array.isArray(fileData)) {
+        history = fileData;
+      }
+    } catch (e) {
+      console.warn('⚠️ 過去データの読み込み失敗。新規データとして処理します。');
+    }
   }
 
   const timestamp = getJstTimestamp();
+
+  // 比較対象は直近の最新データ（historyの先頭要素）
+  const oldData = history.length > 0 ? history[0] : [];
   const diffs = compareData(oldData, newData);
 
   await sendToGAS(timestamp, diffs, newData);
 
-  fs.writeFileSync(DATA_FILE, JSON.stringify(newData, null, 2), 'utf-8');
-  console.log('=== 全処理完了 ===');
+  // --- 最新データを先頭に追加し、過去3回分のみ残して保存 ---
+  history.unshift(newData);
+  history = history.slice(0, 3);
+
+  fs.writeFileSync(DATA_FILE, JSON.stringify(history, null, 2), 'utf-8');
+  console.log(`=== 全処理完了（過去${history.length}回分の履歴を保存） ===`);
 })();
