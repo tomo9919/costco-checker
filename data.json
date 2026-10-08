@@ -19,7 +19,7 @@
     "isSale": false,
     "startDate": "",
     "endDate": "",
-    "inStock": false
+    "inStock": true
   },
   {
     "id": "2004328",
@@ -195,7 +195,7 @@
     "isSale": false,
     "startDate": "",
     "endDate": "",
-    "inStock": false
+    "inStock": true
   },
   {
     "id": "83496",
@@ -272,7 +272,7 @@
     "isSale": false,
     "startDate": "",
     "endDate": "",
-    "inStock": false
+    "inStock": true
   },
   {
     "id": "77156",
@@ -2105,10 +2105,10 @@
     "name": "ネスレ ゴールドブレンド エコ&システム ５パック",
     "url": "https://www.costco.co.jp/Subscription/NESCAFE-Gold-Blend-Eco-System-5-Pack/p/44233",
     "regularPrice": 5398,
-    "salePrice": null,
-    "isSale": false,
-    "startDate": "",
-    "endDate": "",
+    "salePrice": 4318,
+    "isSale": true,
+    "startDate": "2026/09/28",
+    "endDate": "2026/10/11",
     "inStock": true
   },
   {
@@ -3468,7 +3468,7 @@
     "id": "55719",
     "name": "イワタニ カセットガスコンロ 風まるⅢ CB-KZ-3",
     "url": "https://www.costco.co.jp/Iwatani/IWATANI-GAS-COOKING-GRILL-KAZEMARU-CB-KZ-3/p/55719",
-    "regularPrice": 4997,
+    "regularPrice": 3966,
     "salePrice": null,
     "isSale": false,
     "startDate": "",
