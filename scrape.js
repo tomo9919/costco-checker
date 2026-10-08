@@ -7,7 +7,7 @@ const GAS_WEBAPP_URL = process.env.GAS_WEBAPP_URL;
 const CHECK_MODE = process.env.CHECK_MODE; // 'stock_only' かどうかを判定
 const DATA_FILE = path.join(__dirname, 'data.json');
 
-// ★並列処理数を4件に変更
+// ★並列処理数（4件並列）
 const CONCURRENCY = 4;
 
 function getJstTimestamp() {
@@ -46,14 +46,14 @@ async function scrapeProductPage(browser, url) {
   });
 
   try {
-    // ★高速化: networkidle2からdomcontentloadedに変更
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    // 確実なデータ取得のため networkidle2 に設定（タイムアウトは30秒）
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 }).catch(() => {});
 
-    // 必須要素（商品名、価格領域、カートボタンのいずれか）が描画されるまで最大10秒待機
-    await page.waitForSelector('h1.product-name, .product-details, .price-original, #add-to-cart-button', { timeout: 10000 }).catch(() => {});
+    // 価格要素または商品名のレンダリング完了を最大8秒待機
+    await page.waitForSelector('.price-original, .notranslate, .product-price, h1', { timeout: 8000 }).catch(() => {});
     
-    // JSの動的レンダリングを考慮した最小限の待機（1.5秒）
-    await new Promise(r => setTimeout(r, 1500));
+    // JSの動的描画（価格の埋め込み）を確実にするため3秒待機
+    await new Promise(r => setTimeout(r, 3000));
 
     // 1. 商品番号
     const itemNumMatch = url.match(/\/p\/(\d+)/);
