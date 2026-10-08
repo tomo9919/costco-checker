@@ -2,6 +2,7 @@ const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
+
 const GAS_WEBAPP_URL = process.env.GAS_WEBAPP_URL;
 const CHECK_MODE = process.env.CHECK_MODE; // 'stock_only' かどうかを判定
 const DATA_FILE = path.join(__dirname, 'data.json');
@@ -139,7 +140,7 @@ async function scrapeProductPage(browser, url) {
         const prices = [];
         priceElements.forEach(el => {
           const text = (el.innerText || '').trim();
-          if (text.match(/^[¥￥]?[0-9,]+$/)) {
+          if (text.match(/^[¥￥]?[0-9,]+\$/)) {
             const num = parseInt(text.replace(/[¥￥,]/g, ''), 10);
             if (!isNaN(num) && num > 100 && !prices.includes(num)) {
               prices.push(num);
@@ -287,18 +288,30 @@ async function sendToGAS(timestamp, diffs, items) {
     process.exit(1);
   }
 
+  // --- GASからのURLリスト取得（最大3回リトライ） ---
   let urls = [];
-  try {
-    const res = await axios.get(GAS_WEBAPP_URL);
-    urls = res.data;
-  } catch (err) {
-    console.error('URLリストの取得に失敗しました:', err.message);
-    process.exit(1);
+  const maxRetries = 3;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`URLリストを取得中... (試行 ${attempt}/${maxRetries})`);
+      const res = await axios.get(GAS_WEBAPP_URL, { timeout: 10000 });
+      if (Array.isArray(res.data)) {
+        urls = res.data;
+        break; // 取得成功したらループ脱出
+      }
+    } catch (err) {
+      console.warn(`⚠️ URLリスト取得失敗 (${attempt}/${maxRetries}): ${err.message}`);
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 5000)); // 5秒待機
+      }
+    }
   }
 
+  // リトライ失敗またはURLが空の場合の安全終了処理
   if (!Array.isArray(urls) || urls.length === 0) {
-    console.log('監視対象のURLが登録されていません。');
-    return;
+    console.error('❌ URLリストの取得に失敗したか、監視対象のURLが0件です。処理をスキップして終了します。');
+    return; // process.exit(1)を使用せず正常終了
   }
 
   console.log(`対象件数: ${urls.length} 件`);
