@@ -214,16 +214,16 @@ function compareData(oldData, newData) {
     const oldItem = oldMap.get(newItem.id);
     if (!oldItem) continue;
 
-    // 在庫チェック（全モード共通：Boolean型に明示的に変換して比較）
+    // 在庫チェック（Boolean型に明示的に変換して比較）
     const oldInStock = Boolean(oldItem.inStock);
     const newInStock = Boolean(newItem.inStock);
 
     if (!oldInStock && newInStock) {
-      diffs.backInStock.push({ id: newItem.id, name: newItem.name });
+      diffs.backInStock.push({ id: newItem.id, name: newItem.name, url: newItem.url });
     }
 
     if (oldInStock && !newInStock) {
-      diffs.outOfStock.push({ id: newItem.id, name: newItem.name });
+      diffs.outOfStock.push({ id: newItem.id, name: newItem.name, url: newItem.url });
     }
 
     // 在庫のみモードの場合は価格比較を行わずスキップ
@@ -234,6 +234,7 @@ function compareData(oldData, newData) {
       diffs.newSale.push({
         id: newItem.id,
         name: newItem.name,
+        url: newItem.url,
         regularPrice: oldItem.regularPrice || newItem.regularPrice,
         salePrice: newItem.salePrice,
         diff: (oldItem.regularPrice || newItem.regularPrice) - newItem.salePrice,
@@ -246,6 +247,7 @@ function compareData(oldData, newData) {
       diffs.priceDown.push({
         id: newItem.id,
         name: newItem.name,
+        url: newItem.url,
         oldPrice: oldItem.regularPrice,
         newPrice: newItem.regularPrice,
         diff: oldItem.regularPrice - newItem.regularPrice
@@ -256,6 +258,7 @@ function compareData(oldData, newData) {
       diffs.priceUp.push({
         id: newItem.id,
         name: newItem.name,
+        url: newItem.url,
         oldPrice: oldItem.regularPrice,
         newPrice: newItem.regularPrice,
         diff: newItem.regularPrice - oldItem.regularPrice
