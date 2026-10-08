@@ -6,7 +6,9 @@ const axios = require('axios');
 const GAS_WEBAPP_URL = process.env.GAS_WEBAPP_URL;
 const CHECK_MODE = process.env.CHECK_MODE; // 'stock_only' かどうかを判定
 const DATA_FILE = path.join(__dirname, 'data.json');
-const CONCURRENCY = 2;
+
+// ★並列処理数を4件に変更
+const CONCURRENCY = 4;
 
 function getJstTimestamp() {
   const now = new Date();
@@ -20,9 +22,23 @@ function getJstTimestamp() {
 async function scrapeProductPage(browser, url) {
   const page = await browser.newPage();
   
+  // ユーザーエージェントを設定してブロックリスクを軽減
+  await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+
   await page.setRequestInterception(true);
   page.on('request', (req) => {
-    if (['image', 'stylesheet', 'font', 'media'].includes(req.resourceType())) {
+    const resourceType = req.resourceType();
+    const reqUrl = req.url().toLowerCase();
+
+    // 不要なリソース（画像・スタイル・フォント）＋ 追跡・分析用トラッカーを遮断
+    if (
+      ['image', 'stylesheet', 'font', 'media'].includes(resourceType) ||
+      reqUrl.includes('google-analytics') ||
+      reqUrl.includes('analytics') ||
+      reqUrl.includes('doubleclick') ||
+      reqUrl.includes('facebook') ||
+      reqUrl.includes('hotjar')
+    ) {
       req.abort();
     } else {
       req.continue();
@@ -30,8 +46,14 @@ async function scrapeProductPage(browser, url) {
   });
 
   try {
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
-    await new Promise(r => setTimeout(r, 3000));
+    // ★高速化: networkidle2からdomcontentloadedに変更
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+    // 必須要素（商品名、価格領域、カートボタンのいずれか）が描画されるまで最大10秒待機
+    await page.waitForSelector('h1.product-name, .product-details, .price-original, #add-to-cart-button', { timeout: 10000 }).catch(() => {});
+    
+    // JSの動的レンダリングを考慮した最小限の待機（1.5秒）
+    await new Promise(r => setTimeout(r, 1500));
 
     // 1. 商品番号
     const itemNumMatch = url.match(/\/p\/(\d+)/);
@@ -46,7 +68,7 @@ async function scrapeProductPage(browser, url) {
       });
     } catch (e) {}
 
-    // 3. 価格・特売・期間・在庫の抽出
+    // 3. 価格・特売・期間・在庫の抽出（既存ロジックを完全保持）
     const extractedData = await page.evaluate(() => {
       const bodyText = document.body.innerText || '';
 
@@ -91,7 +113,6 @@ async function scrapeProductPage(browser, url) {
           }
         }
         
-        // .notranslate がない場合は .price-original 内の「¥」を含むテキストから抽出
         if (!regularPrice) {
           const text = (priceOriginalEl.innerText || '').trim();
           const match = text.match(/[¥￥]\s*([0-9,]+)/);
@@ -104,7 +125,7 @@ async function scrapeProductPage(browser, url) {
         }
       }
 
-      // 2. 第2候補: 「オンライン価格」ラベルを持つ要素の周辺から探索（従来のバックアップ）
+      // 2. 第2候補: 「オンライン価格」ラベルを持つ要素の周辺から探索
       if (!regularPrice) {
         const allElements = Array.from(document.querySelectorAll('*'));
         const onlinePriceLabelEl = allElements.find(el => el.children.length === 0 && (el.innerText || '').trim() === 'オンライン価格');
@@ -214,7 +235,6 @@ function compareData(oldData, newData) {
     const oldItem = oldMap.get(newItem.id);
     if (!oldItem) continue;
 
-    // 在庫チェック（Boolean型に明示的に変換して比較）
     const oldInStock = Boolean(oldItem.inStock);
     const newInStock = Boolean(newItem.inStock);
 
@@ -226,10 +246,8 @@ function compareData(oldData, newData) {
       diffs.outOfStock.push({ id: newItem.id, name: newItem.name, url: newItem.url });
     }
 
-    // 在庫のみモードの場合は価格比較を行わずスキップ
     if (isStockOnly) continue;
 
-    // 以下、全項目チェックモード時のみ実行
     if (!oldItem.isSale && newItem.isSale) {
       diffs.newSale.push({
         id: newItem.id,
@@ -291,7 +309,6 @@ async function sendToGAS(timestamp, diffs, items) {
     process.exit(1);
   }
 
-  // --- GASからのURLリスト取得（最大3回リトライ） ---
   let urls = [];
   const maxRetries = 3;
   
@@ -301,23 +318,22 @@ async function sendToGAS(timestamp, diffs, items) {
       const res = await axios.get(GAS_WEBAPP_URL, { timeout: 10000 });
       if (Array.isArray(res.data)) {
         urls = res.data;
-        break; // 取得成功したらループ脱出
+        break;
       }
     } catch (err) {
       console.warn(`⚠️ URLリスト取得失敗 (${attempt}/${maxRetries}): ${err.message}`);
       if (attempt < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 5000)); // 5秒待機
+        await new Promise(resolve => setTimeout(resolve, 5000));
       }
     }
   }
 
-  // リトライ失敗またはURLが空の場合の安全終了処理
   if (!Array.isArray(urls) || urls.length === 0) {
     console.error('❌ URLリストの取得に失敗したか、監視対象のURLが0件です。処理をスキップして終了します。');
-    return; // process.exit(1)を使用せず正常終了
+    return;
   }
 
-  console.log(`対象件数: ${urls.length} 件`);
+  console.log(`対象件数: ${urls.length} 件 (並列数: ${CONCURRENCY})`);
 
   const browser = await puppeteer.launch({
     headless: "new",
