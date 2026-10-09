@@ -365,8 +365,10 @@ async function sendToGAS(timestamp, diffs, items) {
 
   const timestamp = getJstTimestamp();
 
-  // 比較対象は直近の最新データ（historyの先頭要素）
-  const oldData = history.length > 0 ? history[0] : [];
+  // 比較対象は直近の最新データ（historyの先頭要素）。配列形式チェックを実施してエラーを防止
+  const rawOldData = history.length > 0 ? history[0] : [];
+  const oldData = Array.isArray(rawOldData) ? rawOldData : [];
+
   const diffs = compareData(oldData, newData);
 
   await sendToGAS(timestamp, diffs, newData);
