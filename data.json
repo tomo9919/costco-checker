@@ -4202,7 +4202,7 @@
       "isSale": true,
       "startDate": "2026/10/09",
       "endDate": "2026/10/11",
-      "inStock": true
+      "inStock": false
     },
     {
       "id": "31274",
@@ -8043,7 +8043,7 @@
       "isSale": false,
       "startDate": "",
       "endDate": "",
-      "inStock": true
+      "inStock": false
     },
     {
       "id": "51157",
@@ -8087,7 +8087,7 @@
       "isSale": true,
       "startDate": "2026/09/28",
       "endDate": "2026/10/11",
-      "inStock": true
+      "inStock": false
     },
     {
       "id": "51897",
@@ -10617,7 +10617,7 @@
       "isSale": true,
       "startDate": "2026/10/07",
       "endDate": "2026/10/11",
-      "inStock": true
+      "inStock": false
     },
     {
       "id": "76562",
@@ -11184,7 +11184,7 @@
       "id": "52712",
       "name": "ドクターブロナー マジックソープ 946ml アールグレイ",
       "url": "https://www.costco.co.jp/Earl-Grey/DR-BRONNERS-Magic-Soap-946ml-Earl-Grey/p/52712-3",
-      "regularPrice": null,
+      "regularPrice": 2498,
       "salePrice": null,
       "isSale": false,
       "startDate": "",
