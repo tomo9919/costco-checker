@@ -1285,7 +1285,7 @@
       "isSale": true,
       "startDate": "2026/10/05",
       "endDate": "2026/10/12",
-      "inStock": false
+      "inStock": true
     },
     {
       "id": "854362",
@@ -3831,6 +3831,17 @@
   ],
   [
     {
+      "id": "90421",
+      "name": "ゴディバ ナポリタン 3種のチョコレートアソート 345g",
+      "url": "https://www.costco.co.jp/Gifts-Entertainment/Food-Gifts/Godiva-Napolitains-Assorted-Chocolates-345g/p/90421",
+      "regularPrice": 2298,
+      "salePrice": 1898,
+      "isSale": true,
+      "startDate": "2026/10/09",
+      "endDate": "2026/10/12",
+      "inStock": false
+    },
+    {
       "id": "2004328",
       "name": "カークランドシグネチャー ココナッツオイル 2280g",
       "url": "https://www.costco.co.jp/Food-Beverage/Pantry-Dry-Goods/Oils-Dressing/Kirkland-Signature-Coconut-Oil-2280g/p/2004328",
@@ -4209,10 +4220,10 @@
       "name": "明治 マカダミアチョコレート 100個",
       "url": "https://www.costco.co.jp/Food-Beverage/Chocolate/Other-Chocolates/MEIJI-MACADAMIA-CHOCOLATE/p/84913",
       "regularPrice": 3198,
-      "salePrice": 2548,
-      "isSale": true,
-      "startDate": "2026/10/09",
-      "endDate": "2026/10/11",
+      "salePrice": null,
+      "isSale": false,
+      "startDate": "",
+      "endDate": "",
       "inStock": false
     },
     {
@@ -4220,10 +4231,10 @@
       "name": "フィニッシュ オールインワンタブレット 94 個入り",
       "url": "https://www.costco.co.jp/Cleaning-Laundry-Pet-supplies-Household-Essentials/Detergents-Cleaning-Supplies/Dish-Detergents/Finish-All-In-One-Tablet-94-Count/p/31274",
       "regularPrice": 1788,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 1428,
+      "isSale": true,
+      "startDate": "2026/10/12",
+      "endDate": "2026/10/18",
       "inStock": true
     },
     {
@@ -4253,10 +4264,10 @@
       "name": "Dove (ダヴ) ボディウォッシュ プレミアム モイスチャーケア 詰替え用 3kg",
       "url": "https://www.costco.co.jp/c/Dove-Premium-Body-Wash-Refill-3kg/p/57777",
       "regularPrice": 1998,
-      "salePrice": 1628,
-      "isSale": true,
-      "startDate": "2026/09/28",
-      "endDate": "2026/10/11",
+      "salePrice": null,
+      "isSale": false,
+      "startDate": "",
+      "endDate": "",
       "inStock": true
     },
     {
@@ -4275,10 +4286,10 @@
       "name": "ネスレ ゴールドブレンド バリスタ フィフティ",
       "url": "https://www.costco.co.jp/c/NESTLE-GOLDBLEND-BARISTA-FIFTY/p/65123",
       "regularPrice": 8298,
-      "salePrice": 6648,
-      "isSale": true,
-      "startDate": "2026/09/28",
-      "endDate": "2026/10/11",
+      "salePrice": null,
+      "isSale": false,
+      "startDate": "",
+      "endDate": "",
       "inStock": false
     },
     {
@@ -4418,10 +4429,10 @@
       "name": "BIORE U ボディウォッシュ詰替え用 2.2L",
       "url": "https://www.costco.co.jp/Biore-u/BIORE-U-BODYWASH-REFIL-22L/p/74400",
       "regularPrice": 1398,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 1148,
+      "isSale": true,
+      "startDate": "2026/10/12",
+      "endDate": "2026/10/18",
       "inStock": true
     },
     {
@@ -4440,17 +4451,6 @@
       "name": "Coco MCT オイル 5g X 120 包",
       "url": "https://www.costco.co.jp/Health-Beauty-Medicine/Diet-Nutrition/Other-Diet-Products/Coco-MCT-Oil-5g-X-120-Count/p/55120",
       "regularPrice": 3688,
-      "salePrice": 2988,
-      "isSale": true,
-      "startDate": "2026/09/28",
-      "endDate": "2026/10/11",
-      "inStock": true
-    },
-    {
-      "id": "19995",
-      "name": "DJ&A シイタケマッシュルームクリスプ 300g",
-      "url": "https://www.costco.co.jp/c/DJA-Shiitake-Mushroom-Crisps-300g/p/19995",
-      "regularPrice": 1898,
       "salePrice": null,
       "isSale": false,
       "startDate": "",
@@ -4458,14 +4458,25 @@
       "inStock": true
     },
     {
+      "id": "19995",
+      "name": "DJ&A シイタケマッシュルームクリスプ 300g",
+      "url": "https://www.costco.co.jp/c/DJA-Shiitake-Mushroom-Crisps-300g/p/19995",
+      "regularPrice": 1898,
+      "salePrice": 1498,
+      "isSale": true,
+      "startDate": "2026/10/12",
+      "endDate": "2026/10/25",
+      "inStock": true
+    },
+    {
       "id": "57788",
       "name": "Dove (ダヴ) ボディウォッシュ シアバター 詰替え用 3㎏",
       "url": "https://www.costco.co.jp/c/Dove-Body-Wash-Shea-butter-Refill-3kg/p/57788",
       "regularPrice": 1998,
-      "salePrice": 1628,
-      "isSale": true,
-      "startDate": "2026/09/28",
-      "endDate": "2026/10/11",
+      "salePrice": null,
+      "isSale": false,
+      "startDate": "",
+      "endDate": "",
       "inStock": true
     },
     {
@@ -4484,10 +4495,10 @@
       "name": "Dove (ダヴ) ボディウォッシュ ピーチ＆スイートピー 詰替え用 3kg",
       "url": "https://www.costco.co.jp/c/Dove-Body-Wash-Peach-Refill-3kg/p/57799",
       "regularPrice": 1998,
-      "salePrice": 1628,
-      "isSale": true,
-      "startDate": "2026/09/28",
-      "endDate": "2026/10/11",
+      "salePrice": null,
+      "isSale": false,
+      "startDate": "",
+      "endDate": "",
       "inStock": true
     },
     {
@@ -4495,10 +4506,10 @@
       "name": "Dove (ダヴ) モイスチャー コンディショナー 詰替え用 2.2 kg",
       "url": "https://www.costco.co.jp/c/DOVE-Moisture-Conditioner-Refill-22-kg/p/19445",
       "regularPrice": 1398,
-      "salePrice": 1128,
-      "isSale": true,
-      "startDate": "2026/09/28",
-      "endDate": "2026/10/11",
+      "salePrice": null,
+      "isSale": false,
+      "startDate": "",
+      "endDate": "",
       "inStock": true
     },
     {
@@ -4506,10 +4517,10 @@
       "name": "Dove (ダヴ) モイスチャーシャンプー 詰替え用 2.2 kg",
       "url": "https://www.costco.co.jp/c/DOVE-Moisture-Shampoo-Refill-22-kg/p/19444",
       "regularPrice": 1398,
-      "salePrice": 1128,
-      "isSale": true,
-      "startDate": "2026/09/28",
-      "endDate": "2026/10/11",
+      "salePrice": null,
+      "isSale": false,
+      "startDate": "",
+      "endDate": "",
       "inStock": true
     },
     {
@@ -4539,10 +4550,10 @@
       "name": "LDC 強炭酸水レモン500ml x 24本　ラベルレス",
       "url": "https://www.costco.co.jp/c/LDC-Strong-Sparkling-Lemon-500ml-x-24-bottles-Labelless/p/46053",
       "regularPrice": 1398,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 1098,
+      "isSale": true,
+      "startDate": "2026/10/12",
+      "endDate": "2026/10/18",
       "inStock": true
     },
     {
@@ -4550,10 +4561,10 @@
       "name": "LUX (ラックス) スーパーリッチシャイン ダメージリペア コンディショナー 詰替え用 2.2kg",
       "url": "https://www.costco.co.jp/Health-Beauty-Medicine/Personal-Care-Goods/Hair-Care/LUX-DAMAGE-REPAIR-CONDITIONER-22KG/p/73893",
       "regularPrice": 1898,
-      "salePrice": 1548,
-      "isSale": true,
-      "startDate": "2026/09/28",
-      "endDate": "2026/10/11",
+      "salePrice": null,
+      "isSale": false,
+      "startDate": "",
+      "endDate": "",
       "inStock": true
     },
     {
@@ -4561,10 +4572,10 @@
       "name": "LUX (ラックス) スーパーリッチシャイン ダメージリペア シャンプー 詰替え用 2.2kg",
       "url": "https://www.costco.co.jp/Health-Beauty-Medicine/Personal-Care-Goods/Hair-Care/LUX-DAMAGE-REPAIR-SHAMPOO-22KG/p/73892",
       "regularPrice": 1898,
-      "salePrice": 1548,
-      "isSale": true,
-      "startDate": "2026/09/28",
-      "endDate": "2026/10/11",
+      "salePrice": null,
+      "isSale": false,
+      "startDate": "",
+      "endDate": "",
       "inStock": true
     },
     {
@@ -4572,10 +4583,10 @@
       "name": "MJBドリップコーヒー バラエティパック 52バッグ",
       "url": "https://www.costco.co.jp/c/MJB-DRIP-COFFEE-VARIETY-52packs/p/68456",
       "regularPrice": 2468,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 1968,
+      "isSale": true,
+      "startDate": "2026/10/12",
+      "endDate": "2026/10/25",
       "inStock": true
     },
     {
@@ -4594,10 +4605,10 @@
       "name": "Schick(シック) 5枚刃 ハイドロ5 プレミアム 敏感肌用 本体刃付+替刃16個",
       "url": "https://www.costco.co.jp/c/Schick-Hydro5-Premium-Sensitive-Holder-with-blade-Cartridge-16-piece/p/31853",
       "regularPrice": 5280,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 4280,
+      "isSale": true,
+      "startDate": "2026/10/12",
+      "endDate": "2026/10/18",
       "inStock": true
     },
     {
@@ -4682,10 +4693,10 @@
       "name": "UMIOS 国内生産 ツナフレーク ライトミート 80g x 18缶パック",
       "url": "https://www.costco.co.jp/c/UMIOS-Tuna-Flake-80g-x-18-cans/p/51515",
       "regularPrice": 2398,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 1898,
+      "isSale": true,
+      "startDate": "2026/10/12",
+      "endDate": "2026/10/25",
       "inStock": true
     },
     {
@@ -4693,10 +4704,10 @@
       "name": "VULCAN ショップタオル 10本",
       "url": "https://www.costco.co.jp/c/VULCAN-SHOP-TOWEL-10PK/p/75400",
       "regularPrice": 3598,
-      "salePrice": 2998,
-      "isSale": true,
-      "startDate": "2026/10/09",
-      "endDate": "2026/10/11",
+      "salePrice": null,
+      "isSale": false,
+      "startDate": "",
+      "endDate": "",
       "inStock": true
     },
     {
@@ -4737,10 +4748,10 @@
       "name": "アタック ゼロ 衣料用洗剤 詰替え 2900g",
       "url": "https://www.costco.co.jp/Subscription/Attack-Zero-Liquid-Laundry-Detergent-2900g/p/78900",
       "regularPrice": 3598,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 2868,
+      "isSale": true,
+      "startDate": "2026/10/12",
+      "endDate": "2026/10/18",
       "inStock": true
     },
     {
@@ -4759,10 +4770,10 @@
       "name": "アマニ油 320g x2",
       "url": "https://www.costco.co.jp/c/FLAXSEED-OIL-320g-x-2/p/56498",
       "regularPrice": 1998,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 1598,
+      "isSale": true,
+      "startDate": "2026/10/12",
+      "endDate": "2026/10/25",
       "inStock": true
     },
     {
@@ -4770,10 +4781,10 @@
       "name": "アリエールジェル 625ml x 8 漂白剤レベル洗浄 エリそで＆くすみ 洗濯洗剤",
       "url": "https://www.costco.co.jp/Ariel/ARIEL-LIQUID-DETERGENT/p/87703",
       "regularPrice": 3398,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 2718,
+      "isSale": true,
+      "startDate": "2026/10/12",
+      "endDate": "2026/10/25",
       "inStock": true
     },
     {
@@ -5188,10 +5199,10 @@
       "name": "カゴメ トマトジュース 食塩無添加 720 ml x 9本",
       "url": "https://www.costco.co.jp/c/Kagome-Tomato-Juice-Salt-Free-720-ml-x-9/p/38885",
       "regularPrice": 2268,
-      "salePrice": 1798,
-      "isSale": true,
-      "startDate": "2026/10/02",
-      "endDate": "2026/10/11",
+      "salePrice": null,
+      "isSale": false,
+      "startDate": "",
+      "endDate": "",
       "inStock": true
     },
     {
@@ -5254,10 +5265,10 @@
       "name": "カルミエン オーガニック ルイボスティー 160P",
       "url": "https://www.costco.co.jp/c/CARMIEN-ORGANIC-ROOIBOS-TEA-160P/p/571555",
       "regularPrice": 2188,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 1748,
+      "isSale": true,
+      "startDate": "2026/10/12",
+      "endDate": "2026/10/25",
       "inStock": true
     },
     {
@@ -5496,10 +5507,10 @@
       "name": "ジップロック コンテナー 16個アソートセット",
       "url": "https://www.costco.co.jp/For-Business/Ziploc-Containers-Assorted-Sets/p/82847",
       "regularPrice": 3498,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 2798,
+      "isSale": true,
+      "startDate": "2026/10/12",
+      "endDate": "2026/10/18",
       "inStock": true
     },
     {
@@ -5562,10 +5573,10 @@
       "name": "ジレット プログライド フレックスボール マニュアル 髭剃り カミソリ 本体+替刃13個",
       "url": "https://www.costco.co.jp/c/Gillette-Proglide-Flexball-Manual-Holder-13-Cartridges/p/41777",
       "regularPrice": 5680,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 4580,
+      "isSale": true,
+      "startDate": "2026/10/12",
+      "endDate": "2026/10/25",
       "inStock": true
     },
     {
@@ -5573,10 +5584,10 @@
       "name": "ジレット プログライド フレックスボール 電動タイプ 髭剃り カミソリ 本体+替刃13個",
       "url": "https://www.costco.co.jp/c/Gillette-Proglide-Flexball-Power-Holder-13-Cartridges/p/41888",
       "regularPrice": 5980,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 4780,
+      "isSale": true,
+      "startDate": "2026/10/12",
+      "endDate": "2026/10/25",
       "inStock": true
     },
     {
@@ -5595,10 +5606,10 @@
       "name": "スイスミス ミルクチョコレートココア (マシュマロ入り) 60袋",
       "url": "https://www.costco.co.jp/c/SwissMiss-Milk-Chocolate-Cocoa-with-Marshmallow-60ct/p/591632",
       "regularPrice": 2498,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 1968,
+      "isSale": true,
+      "startDate": "2026/10/12",
+      "endDate": "2026/10/25",
       "inStock": true
     },
     {
@@ -5694,10 +5705,10 @@
       "name": "セタフィル クリーム 566g",
       "url": "https://www.costco.co.jp/c/Cetaphil-Cream-566g/p/42222",
       "regularPrice": 1980,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 1620,
+      "isSale": true,
+      "startDate": "2026/10/12",
+      "endDate": "2026/10/25",
       "inStock": true
     },
     {
@@ -6101,10 +6112,10 @@
       "name": "バリラ スパゲッティ 500g x 6箱",
       "url": "https://www.costco.co.jp/c/Barilla-Spaghetti-500g-x-6/p/14315",
       "regularPrice": 1548,
-      "salePrice": 1198,
-      "isSale": true,
-      "startDate": "2026/10/05",
-      "endDate": "2026/10/11",
+      "salePrice": null,
+      "isSale": false,
+      "startDate": "",
+      "endDate": "",
       "inStock": true
     },
     {
@@ -6222,10 +6233,10 @@
       "name": "ビーカインド ミニバー プロテイン 24本入り",
       "url": "https://www.costco.co.jp/Food-Beverage/Chocolate/Other-Chocolates/BE-KIND-Minis-Bar-Protein-24-pieces/p/85780",
       "regularPrice": 2998,
-      "salePrice": 2398,
-      "isSale": true,
-      "startDate": "2026/09/28",
-      "endDate": "2026/10/11",
+      "salePrice": null,
+      "isSale": false,
+      "startDate": "",
+      "endDate": "",
       "inStock": true
     },
     {
@@ -6299,10 +6310,10 @@
       "name": "プリングルズ ミニチップスサワークリーム＆オニオン 19g × 30袋",
       "url": "https://www.costco.co.jp/c/Pringles-Minis-Chips-Sour-Cream-Onion-19g-x-30pc/p/66747",
       "regularPrice": 1758,
-      "salePrice": 1398,
-      "isSale": true,
-      "startDate": "2026/10/09",
-      "endDate": "2026/10/11",
+      "salePrice": null,
+      "isSale": false,
+      "startDate": "",
+      "endDate": "",
       "inStock": true
     },
     {
@@ -6376,10 +6387,10 @@
       "name": "マニョ ピュアソイビーン※1クレンジングオイル 200mL x 2 + 55mL　　※1ダイズ油(皮膚コンディショニング剤）",
       "url": "https://www.costco.co.jp/c/manyo-Pure-Soybean1-Cleansing-Oil-200mL-x-2-55mL1-Soybean-Oil-skin-conditioning-agent/p/90759",
       "regularPrice": 3798,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 3138,
+      "isSale": true,
+      "startDate": "2026/10/12",
+      "endDate": "2026/10/25",
       "inStock": true
     },
     {
@@ -6519,10 +6530,10 @@
       "name": "ライオンコーヒーカフェハワイ (粉) 793g",
       "url": "https://www.costco.co.jp/Subscription/Lion-Coffee-Cafe-Hawaii-793g-Ground/p/27671",
       "regularPrice": 4128,
-      "salePrice": 3288,
-      "isSale": true,
-      "startDate": "2026/09/28",
-      "endDate": "2026/10/11",
+      "salePrice": null,
+      "isSale": false,
+      "startDate": "",
+      "endDate": "",
       "inStock": true
     },
     {
@@ -6563,10 +6574,10 @@
       "name": "リステリントータルケアゼロプラス 1L x 4本セット",
       "url": "https://www.costco.co.jp/c/LISTERINE-Total-Care-Zero-Plus-1L-x-4-bottles/p/73895",
       "regularPrice": 3598,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 2998,
+      "isSale": true,
+      "startDate": "2026/10/12",
+      "endDate": "2026/10/18",
       "inStock": true
     },
     {
@@ -6717,10 +6728,10 @@
       "name": "ジップロック コンテナー 16個アソートセット",
       "url": "https://www.costco.co.jp/For-Business/Ziploc-Containers-Assorted-Sets/p/82847",
       "regularPrice": 3498,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 2798,
+      "isSale": true,
+      "startDate": "2026/10/12",
+      "endDate": "2026/10/18",
       "inStock": true
     },
     {
@@ -6761,10 +6772,10 @@
       "name": "関口醸造 濃厚チーズせん 35g x 10袋",
       "url": "https://www.costco.co.jp/c/Sekiguchi-Cheese-Rice-Cracker-35g-x-10/p/591847",
       "regularPrice": 1198,
-      "salePrice": 958,
-      "isSale": true,
-      "startDate": "2026/10/05",
-      "endDate": "2026/10/11",
+      "salePrice": null,
+      "isSale": false,
+      "startDate": "",
+      "endDate": "",
       "inStock": true
     },
     {
@@ -6805,10 +6816,10 @@
       "name": "久世福商店 しろえびせんべい 万能だし味 13g x 20pc",
       "url": "https://www.costco.co.jp/c/Kuzefuku-White-Shrimp-Rice-Crackers-Dashi-13g-x-20pc/p/65177",
       "regularPrice": 1388,
-      "salePrice": 1108,
-      "isSale": true,
-      "startDate": "2026/10/07",
-      "endDate": "2026/10/11",
+      "salePrice": null,
+      "isSale": false,
+      "startDate": "",
+      "endDate": "",
       "inStock": false
     },
     {
@@ -6893,10 +6904,10 @@
       "name": "国産 無添加 100% オーガニック 青汁 3g x 162包入 ＜山本漢方製薬＞",
       "url": "https://www.costco.co.jp/Subscription/100-Pure-Organic-Young-Barley-Green-Powder-3g-x-162-Count/p/822162",
       "regularPrice": 3848,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 3108,
+      "isSale": true,
+      "startDate": "2026/10/12",
+      "endDate": "2026/10/18",
       "inStock": true
     },
     {
@@ -7113,10 +7124,10 @@
       "name": "日本の名湯 旅する気分で選べる 82包セット",
       "url": "https://www.costco.co.jp/c/Bath-Additives-Nihon-No-Meito-82-packs/p/55550",
       "regularPrice": 2280,
-      "salePrice": 1840,
-      "isSale": true,
-      "startDate": "2026/10/05",
-      "endDate": "2026/10/11",
+      "salePrice": null,
+      "isSale": false,
+      "startDate": "",
+      "endDate": "",
       "inStock": true
     },
     {
@@ -7168,10 +7179,10 @@
       "name": "美酢 (ミチョ) イチゴ & ジャスミン 24パック",
       "url": "https://www.costco.co.jp/c/Micho-Drinking-Vinegar-Strawberry-Jasmine-24Packs/p/17723",
       "regularPrice": 2238,
-      "salePrice": 1798,
-      "isSale": true,
-      "startDate": "2026/09/28",
-      "endDate": "2026/10/11",
+      "salePrice": null,
+      "isSale": false,
+      "startDate": "",
+      "endDate": "",
       "inStock": true
     },
     {
@@ -7245,10 +7256,10 @@
       "name": "薬用 アトピアD 保湿フォーム ローション ヘパリン類似物質配合 オールインワン多機能ケア 2本セット",
       "url": "https://www.costco.co.jp/c/ATOPIA-D-ALL-IN-1-LOTION-SET-OF-2/p/29188",
       "regularPrice": 2980,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 2400,
+      "isSale": true,
+      "startDate": "2026/10/12",
+      "endDate": "2026/10/18",
       "inStock": true
     },
     {
