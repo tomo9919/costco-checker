@@ -4356,7 +4356,7 @@
       "isSale": false,
       "startDate": "",
       "endDate": "",
-      "inStock": false
+      "inStock": true
     },
     {
       "id": "51157",
@@ -7977,7 +7977,7 @@
       "isSale": false,
       "startDate": "",
       "endDate": "",
-      "inStock": false
+      "inStock": true
     },
     {
       "id": "57791",
@@ -8296,7 +8296,7 @@
       "isSale": false,
       "startDate": "",
       "endDate": "",
-      "inStock": false
+      "inStock": true
     },
     {
       "id": "51897",
@@ -8956,7 +8956,7 @@
       "isSale": false,
       "startDate": "",
       "endDate": "",
-      "inStock": false
+      "inStock": true
     },
     {
       "id": "1816719",
@@ -11068,7 +11068,7 @@
       "isSale": false,
       "startDate": "",
       "endDate": "",
-      "inStock": true
+      "inStock": false
     },
     {
       "id": "591192",
