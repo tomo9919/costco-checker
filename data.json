@@ -427,7 +427,7 @@
       "isSale": false,
       "startDate": "",
       "endDate": "",
-      "inStock": true
+      "inStock": false
     },
     {
       "id": "84913",
@@ -664,7 +664,7 @@
       "id": "55120",
       "name": "Coco MCT オイル 5g X 120 包",
       "url": "https://www.costco.co.jp/Health-Beauty-Medicine/Diet-Nutrition/Other-Diet-Products/Coco-MCT-Oil-5g-X-120-Count/p/55120",
-      "regularPrice": 3688,
+      "regularPrice": 3188,
       "salePrice": null,
       "isSale": false,
       "startDate": "",
@@ -1424,10 +1424,10 @@
       "name": "カフィタリー ネスプレッソ互換カプセル アソート 140カプセル入",
       "url": "https://www.costco.co.jp/c/Caffitaly-Nespresso-Compatible-Capsules-140pk-Assortment/p/20292",
       "regularPrice": 5998,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 4998,
+      "isSale": true,
+      "startDate": "2026/10/15",
+      "endDate": "2026/10/25",
       "inStock": true
     },
     {
@@ -1538,7 +1538,7 @@
       "isSale": true,
       "startDate": "2026/10/09",
       "endDate": "2026/10/15",
-      "inStock": true
+      "inStock": false
     },
     {
       "id": "575668",
@@ -1599,17 +1599,6 @@
       "id": "509313",
       "name": "ケロッグ コーンフロスティー395g x 3袋",
       "url": "https://www.costco.co.jp/c/Kelloggs-Corn-Frosty-Cereal-395g-x-3/p/509313",
-      "regularPrice": 1598,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
-      "inStock": true
-    },
-    {
-      "id": "70989",
-      "name": "ケロッグ バラエティボックス 3種 x 20袋",
-      "url": "https://www.costco.co.jp/c/KELLOGGS-VARIETY-BOX-20P/p/70989",
       "regularPrice": 1598,
       "salePrice": null,
       "isSale": false,
@@ -2187,7 +2176,7 @@
       "isSale": true,
       "startDate": "2026/09/28",
       "endDate": "2026/10/18",
-      "inStock": true
+      "inStock": false
     },
     {
       "id": "72090",
@@ -2535,17 +2524,17 @@
       "name": "ベビースターラーメン チキン 21g x 54袋",
       "url": "https://www.costco.co.jp/c/Baby-Star-Ramen-Chicken-21g-x-54-pack/p/42807",
       "regularPrice": 1648,
-      "salePrice": 1318,
-      "isSale": true,
-      "startDate": "2026/10/08",
-      "endDate": "2026/10/14",
+      "salePrice": null,
+      "isSale": false,
+      "startDate": "",
+      "endDate": "",
       "inStock": true
     },
     {
       "id": "63539",
       "name": "ポイ太くん 300枚",
       "url": "https://www.costco.co.jp/c/Flushable-Doggie-Mess-Bag-300-Bags/p/63539",
-      "regularPrice": 2198,
+      "regularPrice": 2138,
       "salePrice": null,
       "isSale": false,
       "startDate": "",
@@ -8252,7 +8241,7 @@
       "isSale": false,
       "startDate": "",
       "endDate": "",
-      "inStock": false
+      "inStock": true
     },
     {
       "id": "51157",
