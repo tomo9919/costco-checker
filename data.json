@@ -3265,7 +3265,7 @@
       "isSale": false,
       "startDate": "",
       "endDate": "",
-      "inStock": true
+      "inStock": false
     },
     {
       "id": "577393",
@@ -5507,10 +5507,10 @@
       "name": "カークランドシグネチャー 大判厚手 おしりふき 900枚入 (100 x 9個)",
       "url": "https://www.costco.co.jp/Kirkland-Signature/KS-BABY-WIPE-900-WIPES/p/1313100",
       "regularPrice": 3298,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 2698,
+      "isSale": true,
+      "startDate": "2026/10/25",
+      "endDate": "2026/10/26",
       "inStock": true
     },
     {
@@ -6661,8 +6661,8 @@
       "id": "87497",
       "name": "マルエス スルメスティック 310g",
       "url": "https://www.costco.co.jp/Food-Beverage/Snacks-Savory-Treats/Savory-Treats/SURUME-STICK-310G/p/87497",
-      "regularPrice": 1437,
-      "salePrice": 1117,
+      "regularPrice": 1598,
+      "salePrice": 1278,
       "isSale": true,
       "startDate": "2026/10/23",
       "endDate": "2026/10/25",
@@ -8175,7 +8175,7 @@
       "isSale": true,
       "startDate": "2026/10/23",
       "endDate": "2026/10/25",
-      "inStock": true
+      "inStock": false
     },
     {
       "id": "568363",
