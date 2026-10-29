@@ -147,7 +147,7 @@
       "id": "45240",
       "name": "千年屋 おいしいドーナツ 20個入り",
       "url": "https://www.costco.co.jp/c/Sennenya-Delicious-Doughnuts-20pc/p/45240",
-      "regularPrice": 858,
+      "regularPrice": 948,
       "salePrice": null,
       "isSale": false,
       "startDate": "",
@@ -1940,7 +1940,7 @@
       "id": "55721",
       "name": "ジップロック ダブルジッパー フリーザー用バッグ Mサイズ 220枚",
       "url": "https://www.costco.co.jp/c/Ziploc-Freezer-Double-Zipper-M-Size-220pc/p/55721",
-      "regularPrice": 2338,
+      "regularPrice": 2798,
       "salePrice": null,
       "isSale": false,
       "startDate": "",
@@ -1951,7 +1951,7 @@
       "id": "66721",
       "name": "ジップロックフリーザーバッグ Lサイズ 168枚",
       "url": "https://www.costco.co.jp/c/Ziploc-Freezer-Bags-L-Size-168ct/p/66721",
-      "regularPrice": 3158,
+      "regularPrice": 3598,
       "salePrice": null,
       "isSale": false,
       "startDate": "",
@@ -1966,7 +1966,7 @@
       "salePrice": 6998,
       "isSale": true,
       "startDate": "2026/10/20",
-      "endDate": "2026/11/01",
+      "endDate": "2026/11/22",
       "inStock": true
     },
     {
@@ -2578,7 +2578,7 @@
       "id": "85782",
       "name": "ビーカインド ミニバー ダークチョコレートアーモンド & シーソルト 標準24個入り",
       "url": "https://www.costco.co.jp/Food-Beverage/Chocolate/Other-Chocolates/BE-KIND-Minis-Bar-Dark-Chocolate-Almond-Sea-Salt-24-pieces/p/85782",
-      "regularPrice": 2580,
+      "regularPrice": 2468,
       "salePrice": null,
       "isSale": false,
       "startDate": "",
@@ -3062,7 +3062,7 @@
       "id": "55721",
       "name": "ジップロック ダブルジッパー フリーザー用バッグ Mサイズ 220枚",
       "url": "https://www.costco.co.jp/c/Ziploc-Freezer-Double-Zipper-M-Size-220pc/p/55721",
-      "regularPrice": 2338,
+      "regularPrice": 2798,
       "salePrice": null,
       "isSale": false,
       "startDate": "",
@@ -7889,7 +7889,7 @@
       "isSale": false,
       "startDate": "",
       "endDate": "",
-      "inStock": false
+      "inStock": true
     },
     {
       "id": "47265",
@@ -8010,7 +8010,7 @@
       "isSale": false,
       "startDate": "",
       "endDate": "",
-      "inStock": false
+      "inStock": true
     },
     {
       "id": "13618",
@@ -8021,7 +8021,7 @@
       "isSale": false,
       "startDate": "",
       "endDate": "",
-      "inStock": false
+      "inStock": true
     },
     {
       "id": "15059",
