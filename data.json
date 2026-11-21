@@ -321,9 +321,9 @@
     },
     {
       "id": "1739160",
-      "name": "カークランドシグネチャー 衣料用柔軟剤ラベンダー4.4L",
+      "name": "ページが見つかりませんでした",
       "url": "https://www.costco.co.jp/Kirkland-Signature/Kirkland-Signature-ULTRA-FRESH-SOOTHING-FABRIC-CONDITIONER-149oz/p/1739160",
-      "regularPrice": 2198,
+      "regularPrice": null,
       "salePrice": null,
       "isSale": false,
       "startDate": "",
@@ -343,9 +343,9 @@
     },
     {
       "id": "84822",
-      "name": "フェレロ ヌテラ アンド ゴー! 52g x 16個",
+      "name": "ページが見つかりませんでした",
       "url": "https://www.costco.co.jp/Food-Beverage/Ferrero-nutella-GO-52g-x-16/p/84822",
-      "regularPrice": 3468,
+      "regularPrice": null,
       "salePrice": null,
       "isSale": false,
       "startDate": "",
@@ -5925,10 +5925,10 @@
       "name": "シルコット ウェットティッシュ つめかえ用 688枚",
       "url": "https://www.costco.co.jp/c/SILCOT-Wet-Tissue-688-sheet/p/55200",
       "regularPrice": 1998,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 1628,
+      "isSale": true,
+      "startDate": "2026/11/21",
+      "endDate": "2026/11/23",
       "inStock": true
     },
     {
@@ -6952,7 +6952,7 @@
       "isSale": false,
       "startDate": "",
       "endDate": "",
-      "inStock": true
+      "inStock": false
     },
     {
       "id": "68806",
@@ -7047,10 +7047,10 @@
       "name": "黒糖ドーナツ棒 700g",
       "url": "https://www.costco.co.jp/c/BROWN-SUGAR-DONUT-STICK-700g/p/67892",
       "regularPrice": 1298,
-      "salePrice": null,
-      "isSale": false,
-      "startDate": "",
-      "endDate": "",
+      "salePrice": 1038,
+      "isSale": true,
+      "startDate": "2026/11/21",
+      "endDate": "2026/11/23",
       "inStock": true
     },
     {
@@ -7845,7 +7845,7 @@
       "isSale": true,
       "startDate": "2026/11/09",
       "endDate": "2026/11/22",
-      "inStock": false
+      "inStock": true
     },
     {
       "id": "88965",
@@ -8131,7 +8131,7 @@
       "isSale": true,
       "startDate": "2026/11/02",
       "endDate": "2026/11/21",
-      "inStock": true
+      "inStock": false
     },
     {
       "id": "1551792",
@@ -8153,7 +8153,7 @@
       "isSale": true,
       "startDate": "2026/10/26",
       "endDate": "2026/11/22",
-      "inStock": false
+      "inStock": true
     },
     {
       "id": "58476",
@@ -8670,7 +8670,7 @@
       "isSale": true,
       "startDate": "2026/11/20",
       "endDate": "2026/11/21",
-      "inStock": true
+      "inStock": false
     },
     {
       "id": "19439",
@@ -9484,7 +9484,7 @@
       "isSale": true,
       "startDate": "2026/11/09",
       "endDate": "2026/11/22",
-      "inStock": true
+      "inStock": false
     },
     {
       "id": "38885",
